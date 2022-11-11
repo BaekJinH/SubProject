@@ -1,0 +1,38 @@
+.mypage_box {
+    display:flex;
+    flex-flow : column  wrap;
+    justify-content: center;
+    align-items: center;
+}
+.mine_tag_area {
+    width:100%;
+    text-align:center;
+    margin-bottom:10px !important;
+}
+
+
+.sub_list {
+    width:100%;
+    /* background-color: red; */
+    display:flex;
+    flex-flow: row wrap;
+    justify-content: space-evenly;
+}
+.sub_list dt {
+    width:30% !important;
+    /* background-color: beige; */
+}
+.sub_list dd {
+    width:50% !important;
+    /* background-color: blue; */
+}
+
+.mine_btn_area > button {
+    margin-right:10px;
+    margin-left:10px;
+}
+
+.mine_etc_box {
+    width:100%;
+}
+

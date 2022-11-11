@@ -1,0 +1,1980 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+        <!-- <meta name="viewport" content="width=device-width, user-scalable=no"> -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+        <meta name="format-detection" content="telephone=no">
+        <meta name="title" content="">
+        <meta name="description" content="">
+        <meta name="keywords" content="">
+        <title>데이터안심구역</title>
+        <link rel="shortcut icon" type="image/x-icon" href="/static/images/common/favicon.ico">
+        <link rel="stylesheet" href="/static/css/reset.css">
+        <link rel="stylesheet" href="/static/css/modules.css">
+        <link rel="stylesheet" href="/static/css/contents.css">
+        <link rel="stylesheet" href="/static/css/dummy.css"><!-- 신규 콘텐츠 용, 꼭 마지막에 호출한다 -->
+        <link rel="stylesheet" href="/static/css/main.css">
+        <!-- 수료증 추가 -->
+        <link rel="stylesheet" href="/static/css/complet.css">
+        <script src="/static/js/jquery-1.12.4.min.js"></script>
+        <script src="/static/js/jshashtable-2.1.js"></script>
+        <script src="/static/js/jquery.numberformatter-1.2.3.js"></script>
+        
+        <script src="/static/js/complet.js"></script>
+        <script src="/static/js/ui_pub.js"></script>
+    
+
+        <!-- 홈페이지 보완 -->
+        <link rel="stylesheet" href="/static/css/page.css">
+        <!-- 슬라이더 이용시 -->
+        <script src="/static/js/swiper.min.js"></script>
+        <link rel="stylesheet" href="/static/css/swiper.min.css">
+        <!-- //슬라이더 이용시 -->
+    
+        <!--[if lte ie 9]>
+    <script src="/static/js/css3-mediaqueries.min.js"></script>
+    <![endif]-->
+    
+    
+        <link rel="stylesheet" href="/static-dev/css/portal.css">
+        <script src="/static-dev/js/portal.js"></script>
+        <script src="/static-dev/js/jquery.blockUI.js"></script>
+        <script src="/static-dev/js/mustache.min.js"></script>
+    
+    
+    
+        <script src="/static/js/jquery.mCustomScrollbar.js"></script>
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155313055-1"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+    
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag('js', new Date());
+    
+            gtag('config', 'UA-155313055-1');
+        </script>
+    
+    
+    
+        <script>
+            $(function() {
+                $("title").html("홈 > 나의신청관리 > 상세");
+    
+                var tkinAttachmentIds = [];
+                var referAttachmentIds = [];
+                var tkoutAttachmentIds = [];
+    
+                var takeinFileSize = 0;
+                var uploadFileMaxSize = 314572800;
+                var allowedFileExts = 'TXT/XLS/XLSX/PDF/DOC/DOCX/PPT/PPTX/HWP/JPG/CSV/CVS/R/ODT/IPYNB'.split("/");
+    
+                var team = 'false';
+                var linkInstitutionId = 'link_institution_af45424e05564406a5c5fac9966b9967';
+    
+                // 팀원 리스트 조회
+                selectTeamMember();
+    
+                // 공동분석가 조회
+                selectCoresearcher();
+    
+                // 안심구역인 경우 안심구역인 경우에만 이용데이터, 반입자료, 참조자료 조회
+                if (linkInstitutionId === 'kdata') {
+                    selectUseData();
+                    selectTakeinFile();
+                    selectReferenceFile();
+                }
+    
+                $('#btnAddComplete, #btnAddModify').click(function() {
+                    var text = '';
+                    if (linkInstitutionId === 'kdata') {
+                        if (this.id === 'btnAddComplete') {
+                            if (confirm('신청서를 작성하시겠습니까?')) {
+                                location.href = "/member/apply/add/data_index.do";
+                            }
+                        } else if (this.id === 'btnAddModify') {
+                            if (confirm('신청 내용을 변경하시겠습니까?')) {
+                                location.href = "/member/apply/add/data_index.do?applicationId=" + $(this).data('id');
+                            }
+                        }
+                    } else {
+                        if (this.id === 'btnAddComplete') {
+                            if (confirm('신청서를 작성하시겠습니까?')) {
+                                location.href = "/member/apply/add/fillout_linkInstitution_index.do";
+                            }
+                        } else if (this.id === 'btnAddModify') {
+                            if (confirm('신청 내용을 변경하시겠습니까?')) {
+                                location.href = "/member/apply/add/fillout_linkInstitution_index.do";
+                            }
+                        }
+                    }
+                });
+    
+    
+                $('#btnAddDelete, #btnAddCancel').click(function() {
+                    var text = '';
+    
+                    if (this.id === 'btnAddDelete') {
+                        text = '이용신청을 삭제하시겠습니까?';
+                    } else if (this.id === 'btnAddCancel') {
+                        text = '이용신청을 취소하시겠습니까?';
+                    }
+    
+                    if (confirm(text)) {
+                        component.post({
+                            url: "/member/apply/mine/apply_cancel.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            },
+                            success: function(data, status, xhr) {
+                                location.href = '/member/apply/mine/index.do?lastCondition=true';
+                            }
+                        });
+                    }
+                });
+    
+                // 김민정(201029) - 반출신청취소에 apId 추가
+    
+                $('#takeoutFileTable').on('click', '.btnTkCancel', function() {
+                    // var trIndex = $(this).closest('tr').index() + 1;
+                    var apId = $(this).attr("data-apid");
+    
+                    if (confirm('신청을 취소하시겠습니까?')) {
+                        component.post({
+                            url: "/member/apply/mine/takeout_cancel.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                                apId: apId
+                            },
+                            success: function(data, status, xhr) {
+                                location.reload();
+                            }
+                        });
+                    }
+                });
+    
+    
+                $('#btnRequire').click(function() {
+                    if (confirm('동일한 내용으로 다시 신청하시겠습니까?')) {
+                        component.post({
+                            url: "/member/apply/mine/retry.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            },
+                            success: function(data, status, xhr) {
+                                location.href = '/member/apply/add/data_index.do?applicationId=' + data.applicationId;
+                            }
+                        });
+                    }
+                });
+    
+    
+                // 21.10.14 주석처리
+                $('#btnUseEndToday').click(function() {
+                    if (confirm('당일 방문 전 이용종료를 하시겠습니까?')) {
+                        component.post({
+                            url: "/member/apply/mine/use_end_today.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            },
+                            success: function(data, status, xhr) {
+                                alert('오늘날짜로 이용종료 되었습니다.');
+                                location.reload();
+                            }
+                        });
+                    }
+                });
+                // 21.10.14 주석처리
+                $('#btnUseEnd').click(function() {
+                    if (confirm('당일 방문 후 이용종료를 하시겠습니까?')) {
+                        component.post({
+                            url: "/member/apply/mine/use_end.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            },
+                            success: function(data, status, xhr) {
+                                alert('처리되었습니다. 내일날짜로 이용종료 될 예정입니다.');
+                                location.reload();
+                            }
+                        });
+                    }
+                });
+    
+    
+                $('#takeinFileClose1, #takeinFileClose2').click(function(e) {
+                    e.preventDefault();
+    
+                    // 반입 팝업 닫기 시 기존에 추가 반입으로 등록했던 파일들을 모두 삭제 하고 초기화 한다.
+                    var attachmentIds = []; // 삭제할 파일 ID
+                    var fileSizes = []; // 삭제할 파일 사이즈
+    
+                    $('#takein-file-add-table input:checkbox').each(function(i, e) {
+                        var data = $(this).data('id');
+    
+                        if (data && data.indexOf(",") > -1) {
+                            attachmentIds.push(data.split(",")[0]);
+                            fileSizes.push(data.split(",")[1]);
+                        }
+                    });
+    
+                    // 삭제할 파일 이 있는 경우에만 삭제 요청처리
+                    if (attachmentIds.length > 0) {
+                        component.post({
+                            url: "/member/apply/mine/add_takeinfile_remove.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                                attachmentIds: attachmentIds
+                            },
+                            success: function(data, status, xhr) {
+                                // tbody를 비워주고 count를 0으로 세팅한다.
+                                $('#takein-reason').val('');
+                                $('#takeinFileCntAdd').text(0);
+                                $('#takein-file-add-table tbody').html('<tr><td colspan="3" class="center">추가 신청한 반입자료가 없습니다.</td></tr>');
+    
+                                // 추가 되는 만큼 파일 사이즈를 빼준다.
+                                for (var i = 0; i < fileSizes.length; ++i) {
+                                    takeinFileSize -= Number(fileSizes[i]);
+                                }
+                            }
+                        });
+                    } else {
+                        $('#takein-reason').val('');
+                        $('#takeinFileCntAdd').text(0);
+                        $('#takein-file-add-table tbody').html('<tr><td colspan="3" class="center">추가 신청한 반입자료가 없습니다.</td></tr>');
+                    }
+    
+                    KDATA.modalLayer.close();
+                });
+    
+    
+                $('.btnTkinDownload').click(function() {
+                    if (tkinAttachmentIds != null && tkinAttachmentIds.length > 0) {
+                        if (confirm("반입자료를 다운로드 하겠습니까?")) {
+                            component.submit({
+                                url: "/member/apply/mine/takein_download.do",
+                                data: {
+                                    applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                                    attachmentId: tkinAttachmentIds
+                                }
+                            });
+                        }
+                    } else {
+                        alert("다운로드할 반입자료가 없습니다.")
+                    }
+                });
+    
+    
+                $('#takein-onclick').click(function() {
+                    var $takeinReason = $('#takein-reason');
+                    var attachmentIds = []; // 추가 할 파일 ID
+    
+                    $('#takein-file-add-table input:checkbox').each(function(i, e) {
+                        var data = $(this).data('id');
+    
+                        if (data && data.indexOf(",") > -1) {
+                            attachmentIds.push(data.split(",")[0]);
+                        }
+                    });
+    
+                    if (attachmentIds.length == 0) {
+                        // 파일 등록 리스트 체크(파일 목록이 있어야 함)
+                        alert("추가 신청한 반입자료가 없습니다.");
+                    } else if ($.isBlank($takeinReason.val())) {
+                        // 반입 사유 입력
+                        alert('추가반입 사유를 입력하세요');
+    
+                        $takeinReason.val("");
+                        $takeinReason.focus();
+                    } else if (confirm("추가반입을 신청하시겠습니까?")) {
+                        // 김민정(201014) - 반입신청 테이블에 추가
+                        component.post({
+                            url: "/member/apply/mine/add_takeinfile_insert.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                                applicationReason: $takeinReason.val(),
+                                attachmentIds: attachmentIds
+                            },
+                            success: function(data, status, xhr) {
+                                // 반입신청이 되면 반입사유 삭제
+                                $('#takein-reason').val('');
+    
+                                // 추가 신청 반입자료를 삭제
+                                $('#takeinFileCntAdd').text(0);
+                                $('#takein-file-add-table tbody').html('<tr><td colspan="3" class="center">추가 신청한 반입자료가 없습니다.</td></tr>');
+    
+                                // 새로 반입자료를 호출한다.
+                                selectTakeinFile();
+                            }
+                        });
+                    }
+                });
+    
+    
+                $('#takein-reason').keyup(function(e) {
+                    var inputText = $(this).val();
+                    if (inputText.length > 80) {
+                        alert('추가반입 사유는 최대 80자까지 등록 가능합니다');
+                        inputText.substr(0, 79);
+                    }
+                })
+    
+    
+                $('#btnAddTakeinFile').click(function(e) {
+                    e.preventDefault();
+    
+                    $(this).prev().click();
+                });
+    
+    
+                $('#fma02_pop03').on('change', '.file', function() {
+                    var $this = $(this);
+                    var fileSize = $this.prop('files')[0].size;
+                    var fileExt = $this.prop('files')[0].name.slice($this.prop('files')[0].name.lastIndexOf(".") + 1);
+                    // 파일 업로드 시 파일 이름에 공백이 없어야 하며, 영문자와 숫자만 가능하도록 체크
+                    var fileName = $this.prop('files')[0].name.slice(0, $this.prop('files')[0].name.lastIndexOf("."));
+                    // 파일명은 공백없이 영문자와 숫자만 가능하도록 한다.
+                    var fileNamePattern = /^[A-Za-z0-9+]*$/g;
+    
+                    if (!fileNamePattern.test(fileName)) {
+                        alert('반입자료의 파일명에는 영문 대,소문자 및 숫자만 포함할 수 있습니다.(공백 및 한글 불가)');
+                        $this.val('');
+    
+                        return false;
+                    }
+    
+                    if (!isAllowedExt(fileExt)) {
+                        alert('지원하지 않는 파일 확장자가 포함되어 있습니다.(' + fileExt + ')');
+                        $this.val('');
+    
+                        return false;
+                    }
+    
+                    if (takeinFileSize + fileSize > uploadFileMaxSize) {
+                        alert('반입 가능한 최대 크기 (300 MB)를 초과하였습니다.');
+                        $this.val('');
+    
+                        return false;
+                    }
+    
+                    component.postMultipart({
+                        url: "/member/apply/mine/add_takeinfile_upload.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            file: $this.prop('files')[0]
+                        },
+                        success: function(data, status, xhr) {
+                            // 현재 파일의 값을 초기화 시킨다.
+                            $this.val('');
+    
+                            // upload한 파일정보가 있다면
+                            if (data && data.attachmentId && data.fileSize > 0) {
+                                // upload 된 파일이 전혀 없으면 tbody를 비워주고 count를 0으로 세팅한다.
+                                if ($('#takein-file-add-table input:checkbox').length == 0) {
+                                    $('#takeinFileCntAdd').text(0);
+                                    $('#takein-file-add-table tbody').empty();
+                                }
+    
+                                // 1건씩 생성 추가
+                                $('#takeinFileCntAdd').text(Number($('#takeinFileCntAdd').text()) + 1);
+    
+                                // index를 자료수로 세팅
+                                data.index = $('#takeinFileCntAdd').text();
+    
+                                $('#takein-file-add-table tbody').append(Mustache.render($('#takeInFile_add_data').html(), data));
+    
+                                // 추가 되는 만큼 파일 사이즈를 증가 시킨다.
+                                takeinFileSize += data.fileSize;
+    
+                                // 적용?????
+                                KDATA.dsgnForm();
+                            }
+                        }
+                    });
+                });
+    
+    
+                $('#btnRemoveTakeinFile').click(function(e) {
+                    e.preventDefault();
+    
+                    var attachmentIds = []; // 삭제할 파일 ID
+                    var fileSizes = []; // 삭제할 파일 사이즈
+    
+                    $('#takein-file-add-table input:checkbox').each(function(i, e) {
+                        if (this.checked) {
+                            var data = $(this).data('id');
+    
+                            if (data && data.indexOf(",") > -1) {
+                                attachmentIds.push(data.split(",")[0]);
+                                fileSizes.push(data.split(",")[1]);
+                            }
+                        }
+                    });
+    
+                    if (attachmentIds.length > 0) {
+                        if (confirm('선택 한 파일을 삭제하시겠습니까?')) {
+                            component.post({
+                                url: "/member/apply/mine/add_takeinfile_remove.do",
+                                data: {
+                                    applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                                    attachmentIds: attachmentIds
+                                },
+                                success: function(data, status, xhr) {
+                                    // 삭제된 갯수만큼 count 빼줌
+                                    $('#takeinFileCntAdd').text(Number($('#takeinFileCntAdd').text()) - attachmentIds.length);
+    
+                                    // 삭제 요청 된 tr을 삭제한다.
+                                    $('#takein-file-add-table input:checkbox:checked').closest("tr").remove();
+    
+                                    // upload 된 파일이 전혀 없으면 tbody를 비워주고 count를 0으로 세팅한다.
+                                    if ($('#takein-file-add-table input:checkbox').length == 0) {
+                                        $('#takeinFileCntAdd').text(0);
+                                        $('#takein-file-add-table tbody').html('<tr><td colspan="3" class="center">추가 신청한 반입자료가 없습니다.</td></tr>');
+                                    } else {
+                                        // 남은 파일이 존재한다면 index를 변경 시켜준다.
+                                        $('#takein-file-add-table input:checkbox').each(function(i, e) {
+                                            $(this).closest("tr").children(":first-child").text((i + 1));
+                                        });
+                                    }
+    
+                                    // 추가 되는 만큼 파일 사이즈를 빼준다.
+                                    for (var i = 0; i < fileSizes.length; ++i) {
+                                        takeinFileSize -= Number(fileSizes[i]);
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        alert("삭제할 파일을 선택하세요.");
+                    }
+                });
+    
+    
+                $('.btnRefDownload').click(function() {
+                    component.submit({
+                        url: "/member/apply/mine/refer_download.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            attachmentId: referAttachmentIds
+                        }
+                    });
+                });
+    
+    
+                $('.btnTkoutDownload').click(function() {
+                    component.submit({
+                        url: "/member/apply/mine/takeout_download.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            attachmentId: tkoutAttachmentIds
+                        }
+                    });
+                });
+    
+    
+                $('#takeoutFileTable').on('click', '.tkoutCnt2', function() {
+                    // var trIndex = $(this).closest('tr').index() + 1;
+                    var apId = $(this).attr("data-apid");
+    
+                    selectTakeoutFile(apId);
+    
+                    // 심의완료일때만 다운로드 버튼 보이게
+                    if ($(this).parent().prev().text() === '심의완료') {
+                        $('.btnTkoutDownload').show();
+                    } else {
+                        $('.btnTkoutDownload').hide();
+                    }
+                    KDATA.modalLayer.open($(this), 'fma02_pop07', '786px');
+                });
+    
+                // FIXME OJKIM ADDED FOR TEST
+                $('#btnQrCode').click(function() {
+                    window.open('/component/qrcode/index.do?a=apply_08eb96cf92a84600b9f9a3897d10578a', '_blank');
+                })
+                // FIXME OJKIM ADDED FOR TEST
+    
+    
+                function isAllowedExt(fileExt) {
+                    var fileExt = fileExt.toLowerCase();
+                    var isAllow = false;
+    
+                    allowedFileExts.some(function(e) {
+                        if (fileExt == e.toLowerCase()) {
+                            isAllow = true;
+                        }
+                    });
+    
+                    return isAllow;
+                }
+    
+    
+                function selectUseData() {
+                    component.get({
+                        url: "/member/apply/add/use_data_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a'
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop01 table tbody').empty();
+    
+                            if (data.length === 0) {
+                                $('#fma02_pop01 table tbody').html('<tr><td colspan="4" class="center">선택한 신청자료가 없습니다.</td></tr>');
+                            } else {
+                                $.each(data, function(i, e) {
+                                    var html;
+    
+                                    html += '<tr>';
+                                    html += '<td>' + (i + 1) + '</td>';
+                                    html += '<td class="left">';
+                                    html += '<span class="blue">' + e.categoryPath + '</span>';
+                                    html += '<br>' + e.dataNm;
+                                    html += '</td>';
+                                    html += '<td>' + e.institutionNm + '</td>';
+                                    html += '<td>' + e.fmtEnabled + '</td>';
+                                    html += '</tr>';
+    
+                                    $('#fma02_pop01 table tbody').append(html);
+                                });
+                            }
+                        }
+                    });
+                }
+    
+    
+                function selectTeamMember() {
+                    component.get({
+                        url: "/member/apply/add/teamMember_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a'
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop_team table tbody').empty();
+    
+                            // 신청자 정보는 필수로 등록
+                            var html = "";
+    
+                            html += "<tr>";
+                            html += "    <td>신청자</td>";
+                            html += "    <td>최철웅</td>";
+                            html += "    <td>nanonic3</td>";
+                            html += "    <td>디자인피커</td>";
+                            html += "</tr>";
+    
+                            if (data.length > 0) {
+                                $.each(data, function(i, e) {
+                                    html += "<tr>";
+                                    html += "    <td>팀원</td>";
+                                    html += "    <td>" + e.userNm + "</td>";
+                                    html += "    <td>" + e.loginId + "</td>";
+                                    html += "    <td>" + e.pstinstNm + "</td>";
+                                    html += "</tr>";
+                                });
+                            }
+    
+                            $('#fma02_pop_team table tbody').append(html);
+                        }
+                    });
+                }
+    
+    
+                function selectCoresearcher() {
+                    component.get({
+                        url: "/member/apply/add/coresearcher_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a'
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop_coresearcher table tbody').empty();
+    
+                            if (data.length === 0) {
+                                $('#fma02_pop_coresearcher table tbody').html('<tr><td colspan="4" class="center">공동분석가가 없습니다.</td></tr>');
+                            } else {
+                                $.each(data, function(i, e) {
+                                    var html;
+    
+                                    html += '<tr>';
+                                    html += '<td>공동분석가</td>';
+                                    html += '<td>' + e.userNm + '</td>';
+                                    html += '<td>' + e.loginId + '</td>';
+                                    html += '<td>' + e.pstinstNm + '</td>';
+                                    html += '</tr>';
+    
+                                    $('#fma02_pop_coresearcher table tbody').append(html);
+    
+                                });
+                            }
+                        }
+                    });
+                }
+    
+    
+                function selectTakeinFile() {
+                    component.get({
+                        url: "/member/apply/add/takein_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            orderNumber: 0
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop03 #takein-file-table tbody').empty();
+    
+                            // 반입자료와 반입자료 사이즈를 초기화 해준다.
+                            tkinAttachmentIds = [];
+                            takeinFileSize = 0;
+    
+                            // 반입자료 리스트 세팅
+                            if (data.length === 0) {
+                                $('#fma02_pop03 #takein-file-table tbody').html('<tr><td colspan="6" class="center">신청한 반입자료가 없습니다.</td></tr>');
+                            } else {
+                                $.each(data, function(i, e) {
+                                    var result = ""; // 결과
+                                    var reason = ""; // 사유
+    
+                                    result = (e.fileDeleted ? "삭제" : (e.takeinStatus === "APPLICATION" ? "신청" : (e.takeinStatus === "RECEIPT" ? "접수" : (e.takeinStatus === "CANCEL" ? "취소" : (e.approval == true ? "승인" : (e.approval == false ? "반려" : "임시저장"))))));
+                                    reason = (result === "삭제" ? e.deletedReason : (result === "취소" ? e.cancelReason : (result === "승인" || result === "반려" ? e.approvalReason : "")));
+    
+                                    e.index = i + 1;
+                                    e.result = result;
+                                    e.reason = reason;
+    
+                                    $('#takein-file-table tbody').append(Mustache.render($('#takeInFile_data').html(), e));
+    
+                                    // 반입자료를 배열에 저장하여 다운로드 가능하도록 함(삭제파일은 제외)
+                                    if (!e.fileDeleted) {
+                                        // 다운로드 저장
+                                        tkinAttachmentIds.push(e.attachmentId);
+                                        // 반입자료 파일 사이즈 저장
+                                        takeinFileSize += e.fileSize;
+                                    }
+                                });
+                            }
+    
+                            // 반입자료 갯수 세팅
+                            $('#takeinFileCnt').text(data.length);
+                            $('#takeinFileCntPopup').text(data.length);
+                        }
+                    });
+                }
+    
+    
+                function selectReferenceFile() {
+                    component.get({
+                        url: "/member/apply/add/refer_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a'
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop04 table tbody').empty();
+    
+                            // 참고자료 다운로드용 배열 초기화
+                            referAttachmentIds = [];
+    
+                            if (data.length === 0) {
+                                $('#fma02_pop04 table tbody').html('<tr><td colspan="2" class="center">신청한 참고자료가 없습니다.</td></tr>');
+                            } else {
+                                $.each(data, function(i, e) {
+                                    var html;
+    
+                                    html += '<tr>';
+                                    html += '<td>' + (i + 1) + '</td>';
+                                    html += ' <td>' + e.fileNm + '</td>';
+                                    html += '</tr>';
+    
+                                    $('#fma02_pop04 table tbody').append(html);
+    
+                                    // 참고자료 다운로드 저장 - 삭제 파일은 제외
+                                    if (!e.fileDeleted) {
+                                        referAttachmentIds.push(e.attachmentId);
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+    
+    
+                function selectTakeoutFile(apId) {
+                    component.get({
+                        url: "/member/apply/mine/takeout_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            apId: apId
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop07 table tbody').empty();
+    
+                            // 반출파일 다운로드용 배열 초기화
+                            tkoutAttachmentIds = [];
+    
+                            if (data.length === 0) {
+                                $('#fma02_pop07 table tbody').html('<tr><td colspan="2" class="center">신청한 반출자료가 없습니다.</td></tr>');
+                            } else {
+                                $('.tkoutCnt').text(data.length);
+                                $('#takeoutFileTable tbody tr:eq(' + (apId - 1) + ') .tkoutCnt2').text((data.length < 10 ? '0' + data.length : data.length) + '건');
+                                $.each(data, function(i, e) {
+                                    var html = '';
+    
+                                    if (e.approval == null) {
+                                        html += '<tr>';
+                                        html += '<td>-</td>';
+                                        html += '<td>' + e.fileNm + '</td>';
+                                        html += '</tr>';
+                                    } else if (e.approval == true) {
+                                        html += '<tr>';
+                                        html += '<td>승인</td>';
+                                        html += '<td>' + e.fileNm + '</td>';
+                                        html += '</tr>';
+    
+                                        // 반출파일 승인 인 경우에만 다운로드 배열 저장
+                                        tkoutAttachmentIds.push(e.attachmentId);
+                                    } else if (e.approval == false) {
+                                        html += '<tr class="return">';
+                                        html += '<td>반려</td>';
+                                        html += '<td>' + e.fileNm;
+                                        html += '<div class="box_grayf5 mt05">';
+                                        html += '<span class="dark-45">반려 사유 : </span><pre class="content">' + e.approvalReason;
+                                        html += '</pre></div>';
+                                        html += '</td>';
+                                        html += '</tr>';
+                                    }
+    
+                                    $('#fma02_pop07 table tbody').append(html);
+                                });
+    
+                                // 다운로드 파일이 없는 경우 다운로드 버튼 삭제
+                                if (tkoutAttachmentIds.length == 0) {
+                                    $('.btnTkoutDownload').remove();
+                                }
+                            }
+                        }
+                    });
+                }
+    
+    
+                function selectTakeoutFileList() {
+                    component.post({
+                        url: "/member/apply/mine/takeout_total_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                        },
+                        success: function(takeoutList, status, xhr) {
+                            if (Object.keys(takeoutList).length > 0) $('#takeoutFileTable tbody').empty();
+    
+                            $.each(takeoutList, function(i, e) {
+                                e.cancelOk = false;
+    
+                                if (e.takeoutStatus === 'APPLICATION' || e.takeoutStatus === 'RECEIPT' || e.takeoutStatus === 'REVIEW_REQUEST' || e.takeoutStatus === 'REVIEW_CLOSING') {
+                                    e.cancelOk = true;
+                                }
+                                if (e.takeoutStatus === 'REVIEW_END' || e.takeoutStatus === 'REQUEST_CANCEL') {
+                                    e.cancelOk = false;
+                                }
+    
+                                // 심의완료가 되면 완료예정일을 완료일로 세팅
+                                if (e.takeoutStatus === 'REVIEW_END') {
+                                    e.reviewEndExpDt = e.reviewEndDt;
+                                }
+    
+                                $('#takeoutFileTable tbody').append(Mustache.render($('#takeoutFile-table').html(), e));
+                            });
+                        }
+                    });
+                }
+    
+                // 안심구역인 경우에만 반출 정보 리스트를 가지고 온다.
+                if (linkInstitutionId === 'kdata') {
+                    selectTakeoutFileList();
+                }
+            });
+        </script>
+    
+        <script type="x-tmpl-mustache" id="takeInFile_data">
+            <tr>
+            <td>{{index}}</td>
+            <td>{{fileNm}}</td>
+            <td>{{applicationReason}}</td>
+            <td>{{applicationDe}}</td>
+            <td>{{result}}</td>
+            <td>{{reason}}</td>
+                </tr>
+            </script>
+    
+        <script type="x-tmpl-mustache" id="takeInFile_add_data">
+            <tr>
+            <td>{{index}}</td>
+            <td><label for="{{attachmentId}}" class="pointer">{{fileNm}}</label></td>
+            <td>
+                <div class="dsgn-form">
+                    <span class="ele-chk square"><input type="checkbox" id="{{attachmentId}}" data-id="{{attachmentId}},{{fileSize}}" /></span>
+                </div>
+                </td>
+                </tr>
+            </script>
+    
+        <script type="x-tmpl-mustache" id="takeoutFile-table">
+            <tr style="height:50px">
+            <td class="center">{{apId}}</td>
+            <td class="center">{{fmtApplicationDt}}</td>
+            <td class="center">{{fmtReviewEndExpDt}}</td>
+            <td class="center">{{takeoutStatusNm}}</td>
+            {{#cancelOk}}
+                <td class="center"><button class="btns sm gray btnTkCancel" data-apid="{{apId}}">신청취소</button></td>
+            {{/cancelOk}}
+            {{^cancelOk}}
+                <td class="center"><span class="blue underline display-ib pointer tkoutCnt2" data-apid="{{apId}}">신청자료</span></td>
+            {{/cancelOk}}
+                </tr>
+            </script>
+    
+    
+    </head>
+<body>
+    <div class="mask"></div>
+    <div id="modal">
+        <div class="modalWrap">
+            <div class="printContent" id="printContent">
+                <div class="bandContainer">
+                    <div class="leftUp"></div>
+                    <div class="rightUp"></div>
+                    <div class="leftDown"></div>
+                    <div class="rightDown"></div>
+                </div>
+                
+                <div class="contentsWrap">
+                    <div class="backgroundText">
+
+                    </div>
+                    <div class="dataNum">
+                        <p>
+                            아무런-숫자-코드-넘버
+                        </p>
+                    </div>
+                    <div class="modalHead">
+                        <h1>수&nbsp;&nbsp;료&nbsp;&nbsp;증</h1>
+                    </div>
+                    <div class="modalInfo">
+                        <table>
+                            <tbody>
+                                <tr class="tableNm">
+                                    <td class="justiCls">
+                                        <span class="dataLeft">성</span>
+                                        <span class="dataRight">명</span>
+                                    </td>
+                                    <td class="colone"> : </td>
+                                    <td>데이터 받아오기 (김영환)</td>
+                                </tr>
+                                <tr class="tableCls">
+                                    <td>교육명</td>
+                                    <td class="colone">
+                                        :
+                                    </td>
+                                    <td>여기도 마찬가지 (데이터 분석 입문 과정)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table>
+                            <tbody>
+                                <tr class="tableDate">
+                                    <td>교육기간</td>
+                                    <td class="colone">
+                                        :
+                                    </td>
+                                    <td>2021.05.07 ~ 05.31</td>
+                                    <!-- 테이블 전부 데이터 삽입 부분 -->
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modalText">
+                        <p>
+                                귀하는 한국데이터산업진흥원이 진행한 <br>
+                                [데이터 안심구역 활용 테이터 분석 <br>
+                                입문과정] 을 수료하였으므로 이 증서를 수여합니다.
+                        </p>
+                    </div>
+                    <div class="modalNum" id="printDate">
+                        <p>2022년&nbsp; 5월&nbsp; 22일</p>
+                    </div>
+                    <div class="modalprint">
+                        <p>
+                            <b>
+                                한국데이터산업진흥원장
+                            </b>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="modalBtnWrap">
+                <button>원본 보기</button>
+                <button id="princBtn" onclick="printBtn()">인쇄</button>
+                <button id="modalClose">닫기</button>
+            </div>
+            <div class="modalUnderText">
+                <p>
+                        본 수료증은 데이터안심구역에서 진행하는 분석캠프에 대한 <br>
+                        교육과정에 대한 수료사실을 증명하는 용도로 활용이 가능하여, <br>
+                        본 수료증은 자격증명, 실적증명 이용에 대한 법적효력이 없음을 안내드립니다
+                </p>
+            </div>
+        </div>
+    </div>
+    <div id="wrap" class="mypage">
+        <div id="header">
+            <script>
+                $(function() {
+                    // 메뉴 선택이 된 경우
+                    if ($(".gnb li.always").length > 0) {
+                        // GNB 메뉴에 always 가 있으면 title 에 해당 메뉴 까지를 작성 하고 페이지 별로 추가 작업 진행
+                        var title = "홈";
+                        var addTitle = "";
+
+                        $(".gnb li.always").each(function() {
+                            title += " > " + $(this).attr("title");
+
+                            if ($(this).data("id") == "USE_ADD") {
+                                addTitle = " > 신청자료선택";
+                            } else if ($(this).data("id") == "USE_INST_ADD") {
+                                addTitle = " > 신청서작성";
+                            }
+                        });
+
+                        $("title").html(title + addTitle);
+                    }
+
+                    $("#keyword").keyup(function() {
+                        $("#header_return_key").html("");
+                        $("#header_return_key").hide();
+                        var html = "";
+                        html = "<ul>";
+                        $.ajax({
+                            type: 'get',
+                            url: "/svc/search/auto.do",
+                            dataType: "json",
+                            data: {
+                                keyword: $("#keyword").val()
+                            },
+                            success: function(data) {
+                                $("#header_return_key").show();
+                                $.each(data, function(index, item) {
+                                    console.log('item keyword  : ' + item.keyword);
+                                    var key = item.keyword;
+                                    html += "<li><a href='#none' onclick=keyword('" + item.keyword + "'); class='diminish'><span class='blue'>" + item.keyword + "</span></a></li>";
+                                });
+                                html += "<ul>";
+                                $("#header_return_key").html(html);
+                            }
+                        });
+
+                    });
+                });
+
+                function keyword(str) {
+                    $("#keyword").val(str);
+                    $("#header_return_key").hide();
+                }
+            </script>
+
+            <!-- 21.11.30 콘솔 디버그 차단 -->
+            <script>
+                function clearConsole() {
+                    console = {};
+                    console.log = function() {};
+                    console.warn = function() {};
+                    console.error = function() {};
+                    console.debug = function() {};
+                    console.info = function() {};
+                    console.dir = function() {};
+                    console.table = function() {};
+                    console.count = function() {};
+                }
+
+                function debuggerWindowsBlock() {
+                    try {
+                        (function functlon1(counter) {
+                            if (201 >= 200) {
+                                try {
+                                    (function functionX() {
+                                        try {
+                                            (function functlon2() {
+                                                if (Math.floor(Math.random() * 100000) % 5 == 0 && Math.floor(Math.random() * 100000) % 10 == 0) {
+                                                    (function() {} ['constructor']('debugger')());
+                                                }
+                                                functlon2();
+                                            })();
+                                        } catch (ax) {
+                                            setTimeout(functionX, /constructor/i.test(window.HTMLElement) || (function(p) {
+                                                return p.toString() === '[object SafariRemoteNotification]';
+                                            })(!window['safari'] || (typeof safari !== 'undefined' && safari.pushNotification)) ? 3500 : typeof InstallTrigger !== 'undefined' ? 4000 : !!window.chrome && !!window.chrome.webstore ? 1500 : (false || !!document.documentMode) ? (/msie /gi.test(navigator.userAgent.toLowerCase()) ? 1500 : 1500) : 1500);
+                                        }
+                                    })();
+                                } catch (ax) {
+                                    setTimeout(function() {
+                                        window.location.reload();
+                                    }, 5000);
+                                }
+                            } else {
+                                functlon1(counter + 1);
+                            }
+                        })(0)
+                    } catch (ax) {
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 5000);
+                    }
+                }
+
+
+                //debug 모드 동작 못하게 막는 스크립트
+                clearConsole();
+                //debuggerWindowsBlock();
+            </script>
+
+            <div id="skip">
+                <a href="https://dsz.kdata.or.kr/svc/main/main.do#contents">본문 콘텐츠 바로가기</a>
+            </div>
+
+            <!-- start: nav bar area -->
+            <div class="user_info_area">
+                <!-- start: 로그인 전 -->
+                <!--<ul class="gnb_top">
+<li><a href="https://dsz.kdata.or.kr/component/login.do">로그인</a></li>
+<li><a href="https://dsz.kdata.or.kr/svc/signup/identity_index.do">회원가입</a></li>
+</ul>-->
+                <!-- end: 로그인 전 -->
+                <!-- start: 로그인 후 -->
+                <ul class="gnb_top">
+                    <li class="login_welcome_text"><span>박성원</span>님 반갑습니다!</li>
+                    <li><a href="/member/profile/index.do">회원정보관리</a></li>
+
+                    <li><a href="/member/apply/mine/index.do">나의신청관리<span class="noti_box">12</span></a></li>
+                    <li><a href="/component/qna/1to1/mine.do">1:1 문의내역<span class="noti_box">1</span></a></li>
+                    <li><a href="/component/logout.do">로그아웃</a></li>
+                </ul>
+                <!-- end: 로그인 후 -->
+            </div>
+            <div id="nav_menu">
+                <h1 class="logo"><a href="https://dsz.kdata.or.kr/" aria-label="메인으로 이동">데이터안심구역</a></h1>
+                <div class="nav_list_bg"></div>
+                <ul class="nav_list">
+                    <li>
+                        <a href=""><span>서비스안내</span></a>
+                        <ul>
+                            <li><a href="">안심구역소개</a></li>
+                            <li><a href="">대전센터소개</a></li>
+                            <li><a href="">대전센터소개</a></li>
+                            <li><a href="">분석환경소개</a></li>
+                            <li><a href="">이용절차소개</a></li>
+                            <li><a href="">제공데이터조회</a></li>
+                            <li><a href="">센터 오시는길</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href=""><span>이용신청</span></a>
+                        <ul>
+                            <li><a href="">이용신청안내</a></li>
+                            <li><a href="">안심구역 이용신청</a></li>
+                            <li><a href="">연계기관 이용신청</a></li>
+                            <li><a href="">체험프로그램 신청</a></li>
+                            <li><a href="">분석캠프 참가신청</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href=""><span>활용사례</span></a>
+                        <ul>
+                            <li><a href="">주요분석사례</a></li>
+                            <li><a href="">활용사례</a></li>
+                            <li><a href="">데이터시각화사례</a></li>
+                            <li><a href="">데이터분석방법</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href=""><span>참여소통</span></a>
+                        <ul>
+                            <li><a href="">공지사항</a></li>
+                            <li><a href="">자주묻는질문</a></li>
+                            <li><a href="">1:1문의</a></li>
+                            <li><a href="">데이터요청</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="gnb2">
+                    <li class="menu-toggle">
+                        <a href="#none" aria-haspopup="true" aria-controls="totalmenu" aria-expanded="false" class="tab-closebtn">모든 메뉴 열기</a>
+                    </li>
+                </ul>
+            </div>
+            <div id="totalmenu" class="all-sec">
+                <div class="user_mobile">
+                    <!-- start: 로그인 전 -->
+                    <!--<ul>
+<li><a href="https://dsz.kdata.or.kr/component/login.do">로그인</a></li>
+<li><a href="https://dsz.kdata.or.kr/svc/signup/identity_index.do">회원가입</a></li>
+</ul>-->
+                    <!-- end: 로그인 전 -->
+                    <!-- start: 로그인 후 -->
+                    <ul>
+                        <li class="login_welcome_text"><span>박성원</span>님 반갑습니다!</li>
+                        <li><a href="/member/profile/index.do">회원정보관리</a></li>
+                        <li><a href="/member/apply/mine/index.do">나의신청관리<span class="noti_box">12</span></a></li>
+                        <li><a href="/component/qna/1to1/mine.do">1:1 문의내역<span class="noti_box">1</span></a></li>
+                        <li><a href="/component/logout.do">로그아웃</a></li>
+                    </ul>
+                    <!-- end: 로그인 후 -->
+                </div>
+                <div class="in-wrap">
+                    <ul>
+                        <li><a href="https://dsz.kdata.or.kr/svc/page/intro/safezone.do">서비스안내</a>
+                            <ul>
+                                <li><a href="https://dsz.kdata.or.kr/svc/page/intro/safezone.do">안심구역소개</a></li>
+                                <li><a href="">대전센터소개</a></li>
+                                <li><a href="">대전센터소개</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/svc/page/intro/analysis.do">분석환경소개</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/svc/page/apply/add/procedure_guide.do">이용절차안내</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/svc/data/search.do">제공데이터조회</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/svc/page/support/location.do">센터 오시는길</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="https://dsz.kdata.or.kr/svc/page/apply/add/index.do">이용신청</a>
+                            <ul>
+                                <li><a href="https://dsz.kdata.or.kr/svc/page/apply/add/index.do">이용신청안내</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/member/apply/add/data_index.do">안심구역 이용신청</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/member/apply/add/fillout_linkInstitution_index.do">연계기관 이용신청</a></li>
+                                <li><a href="">체험프로그램 신청</a></li>
+                                <li><a href="">분석캠프 참가신청</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="https://dsz.kdata.or.kr/svc/page/intro/data_analysis_list.do">활용사례</a>
+                            <ul>
+                                <li><a href="https://dsz.kdata.or.kr/svc/page/intro/data_analysis_list.do">주요분석사례</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/component/bbs/dataAnalysis/index.do">활용사례</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/svc/page/application/data_visualize.do">데이터시각화사례</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/svc/page/application/data_practice.do">데이터분석방법</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="https://dsz.kdata.or.kr/component/bbs/notice/index.do">참여소통</a>
+                            <ul>
+                                <li><a href="https://dsz.kdata.or.kr/component/bbs/notice/index.do">공지사항</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/component/bbs/faq/index.do">자주묻는질문</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/component/qna/1to1/mine.do">1:1문의</a></li>
+                                <li><a href="https://dsz.kdata.or.kr/svc/data/ask_index.do">데이터요청</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- end: nav bar area -->
+        </div>
+        <div id="contents">
+
+            <!-- start: root link area -->
+            <div class="root_link_wrap">
+                <div class="root_link_area">
+                    <a href="">홈</a><span></span>
+                    <a href="">마이페이지</a><span></span>
+                    <a href="">나의 신청관리</a><span></span>
+                </div>
+            </div>
+            <!-- end: root link area -->
+
+            <div class="cont-wrap">
+                <h2>분석캠프 참가 신청내역</h2>
+
+                <!--mypage_list-->
+                <div class="mypage_list">
+                    <div class="mypage_box type02">
+                        <div class="mine_tag_area">
+                            <!--<div class="mine_tag_no">미수료</div>-->
+                            <div class="mine_tag_ok">수료</div>
+                        </div>
+                        <dl class="sub_list">
+                            <dt>분석캠프명</dt>
+                            <dd>데이터안심구역 및 분석(Rapid Miner) 입문과정</dd>
+                            <dt>데이터안심구역 센터명</dt>
+                            <dd>서울센터</dd>
+                            <dt>신청자</dt>
+                            <dd>박성원</dd>
+                            <dt>연락처</dt>
+                            <dd>010-1234-1234</dd>
+                            <dt>직업정보</dt>
+                            <dd>직장인</dd>
+                            <dt>신청일</dt>
+                            <dd>2022-10-22</dd>
+                            <dt>분석캠프일정</dt>
+                            <dd>2022-10-27~2022-10-29</dd>
+                            <dt>신청자료</dt>
+                            <dd>
+                                <button class="underline pointer fs18 fw4" onclick="KDATA.modalLayer.open($(this), 'fma02_pop01', '768px')">
+                                    <span class="blue">1</span>건
+                                </button>
+                            </dd>
+                            <dt>상태</dt>
+                            <dd>
+                                <span class="red">미정 [신청중]</span>
+                            </dd>
+                        </dl>
+                        <!--//sub_list -->
+
+                        <div class="mine_btn_area">
+                            <button class="btns md" id="openModal" data-id="" title=" 수료증 팝업" onclick="openModal()">수료증 출력</button>
+                            <button class="btns md" id="" data-id="" title=" 수정 페이지로 이동">수정하기</button>
+                            <button class="btns md gray" onclick="KDATA.modalLayer.open($(this), 'fma02_pop08', '768px')" title=" 참가 취소">참가취소</button>
+                        </div>
+
+                        <div class="mine_etc_box">
+                            <div class="mine_etc_text">분석캠프에 대한 자세한 문의를 위해서는 아래로 연락 부탁드립니다.</div>
+                            <div class="mine_etc_contact">
+                                <p>운영사무국 전화번호 : <span onclick="location.href='tel:02-3708-5485'">02-3708-5485</span></p>
+                                <p>운영 사무국 이메일 : <span onclick="location.href='mailto:safetyzone@cmcom.kr'">safetyzone@cmcom.kr</span></p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- 김민정(201029) - 안심구역인 경우 반출 자료 관련 list로 생성 -->
+
+                    <!-- //반출 자료 관련 list로 생성 end-->
+                </div>
+                <!--//mypage_list-->
+
+                <div class="btns-wrap">
+                    <button type="button" class="btns la gray" onclick="location.href = '/member/apply/mine/index.do?lastCondition=true';">목록</button>
+                </div>
+            </div>
+
+            <!--수정요청 popup-->
+            <div class="layer-popup mypage" id="fma02_pop00">
+                <div class="dimmed"></div>
+                <div class="pop-area">
+                    <h3 class="pop-tit left">수정요청</h3>
+                    <div class="pop-content">
+                        <div class="in-sec">
+                            <!--p 클래스명 주의 -->
+                            <!-- <p class="left pt40 pb10">반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력</p>
+<p class="left pb10">반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력반려사유 출력 반려사유 출력</p>
+<p class="left pb40 bb-gray-d8">반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력 반려사유 출력반려사유 출력 반려사유 출력</p> -->
+                            <p class="left pt40 pb10"></p>
+                        </div>
+                        <div class="btns-wrap">
+                            <a href="#" class="btns" onclick="KDATA.modalLayer.close(); return false;">확인</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--//수정요청 popup-->
+
+            <!--반출신청자료 popup-->
+            <div class="layer-popup mypage" id="fma02_pop07">
+                <div class="dimmed"></div>
+                <div class="pop-area type-table">
+                    <div class="pop-content">
+                        <h3 class="fs20 fwn">반출신청자료</h3>
+                        <hr class="dark-45">
+
+                        <div class="in-sec">
+                            <!--p 클래스명 주의 -->
+                            <p class="left pt30 pb20 fs16">반출 신청한 자료입니다.<br>승인된 자료만 다운로드 가능합니다.</p>
+                        </div>
+                        <p class="tit_dot mb20">전체자료 <span class="blue tkoutCnt"></span>건</p>
+                        <div class="scroll-table row5">
+                            <div class="tbl-list type03 h245">
+                                <table>
+                                    <caption><strong>선택한 반출신청자료 목록</strong><p>상태, 파일명</p></caption>
+                                    <colgroup>
+                                        <col style="width:15%;">
+                                        <col style="width:auto">
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" class="w15p">상태</th>
+                                            <th scope="col">파일명</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>승인</td>
+                                            <td>kkkkjksofsf00</td>
+                                        </tr>
+                                        <tr class="return">
+                                            <td>반려</td>
+                                            <td>abc123456@
+                                                <div class="box_grayf5 mt05">
+                                                    <span class="dark-45">반려 사유 : </span>
+                                                    개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함
+                                                    `                                       개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>승인</td>
+                                            <td>kkkkjksofsf00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>승인</td>
+                                            <td>kkkkjksofsf00</td>
+                                        </tr>
+                                        <tr class="return">
+                                            <td>반려</td>
+                                            <td>abc123456@
+                                                <div class="box_grayf5 mt05">
+                                                    <span class="dark-45">반려 사유 : </span>
+                                                    개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함
+                                                    `                                       개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!--//tbl-list-->
+                        </div>
+                        <!--//scroll-table-->
+                        <div class="btns-wrap mt50 mb40">
+                            <a href="#" class="btns gray" onclick="KDATA.modalLayer.close(); return false;">닫기</a>
+                            <!-- 김민정(201104) - 신청자 본인만 컨트롤 가능 -->
+
+                            <a href="#" class="btns btnTkoutDownload">다운로드</a>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--//반출신청자료 popup-->
+
+            <!--공동연구자 popup-->
+            <div class="layer-popup mypage" id="fma02_pop_coresearcher">
+                <div class="dimmed"></div>
+                <div class="pop-area type-table">
+                    <div class="pop-content">
+                        <h3 class="fs20 fwn">공동분석가</h3>
+                        <hr class="dark-45">
+
+                        <div class="in-sec">
+                            <!--p 클래스명 주의 -->
+                            <p class="left pt30 pb20 fs16">신청한 공동분석가 목록입니다.</p>
+                        </div>
+                        <p class="tit_dot mb20">선택한 회원 <span class="blue">0</span>명</p>
+                        <div class="tbl-list type03">
+                            <table>
+                                <caption><strong>선택한 공동분석가 목록</strong>
+                                    <p>구분, 이름, 아이디, 소속</p>
+                                </caption>
+                                <colgroup>
+                                    <col style="width:20%;">
+                                    <col style="width:20%;">
+                                    <col style="width:30%;">
+                                    <col style="width:auto">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">구분</th>
+                                        <th scope="col">이름</th>
+                                        <th scope="col">아이디</th>
+                                        <th scope="col">소속</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!--//tbl-list-->
+                        <div class="btns-wrap mt50 mb40">
+                            <a href="#" class="btns gray" onclick="KDATA.modalLayer.close(); return false;">닫기</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--//공동연구자 popup-->
+
+            <!--신청자료 popup-->
+            <div class="layer-popup mypage" id="fma02_pop01">
+                <div class="dimmed"></div>
+                <div class="pop-area type-table">
+                    <div class="pop-content">
+                        <h3 class="fs20 fwn">신청자료</h3>
+                        <hr class="dark-45">
+
+                        <div class="in-sec">
+                            <!--p 클래스명 주의 -->
+                            <p class="left pt30 pb20 fs16">신청한 자료 목록입니다.</p>
+                        </div>
+                        <p class="tit_dot mb20">전체자료 <span class="blue">0</span>건</p>
+                        <div class="scroll-table row3">
+                            <div class="tbl-list h236">
+                                <table>
+                                    <caption><strong>신청자료 목록</strong>
+                                        <p>번호, 자료명, 제공기관, 사용여부</p>
+                                    </caption>
+                                    <colgroup>
+                                        <col style="width:20%;">
+                                        <col style="width:auto">
+                                        <col style="width:30%;">
+                                        <col style="width:20%;">
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" class="w17p">번호</th>
+                                            <th scope="col" class="left pl10">자료명</th>
+                                            <th scope="col" class="pl10">제공기관</th>
+                                            <th scope="col" class="pl10">사용여부</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>1</td><td class="left"><span class="blue">교통 &gt; 대중교통</span><br>서울 지하철 혼잡도(9호선) - 사회적거리두기1단계(20.10.18-24)</td><td>티머니</td><td>사용</td></tr>
+                                    </tbody>
+                                </table>
+
+                            </div>
+                            <!--//tbl-list-->
+                        </div>
+                        <!--//scroll-table-->
+                        <div class="btns-wrap mt50 mb40">
+                            <a href="#" class="btns" onclick="KDATA.modalLayer.close(); return false;">확인</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--//신청자료 popup-->
+
+            <!--반입자료 popup-->
+            <div class="layer-popup mypage" id="fma02_pop03">
+                <div class="dimmed"></div>
+                <div class="pop-area type-table">
+                    <div class="pop-content">
+                        <h3 class="fs20 fwn">반입자료</h3>
+                        <hr class="dark-45">
+
+                        <div class="in-sec">
+                            <!--p 클래스명 주의 -->
+                            <p class="left pt30 pb20 fs16">신청한 반입자료 목록입니다.</p>
+                        </div>
+                        <p class="tit_dot mb20">전체자료 <span class="blue" id="takeinFileCntPopup"></span>건</p>
+                        <div class="scroll-table row5">
+                            <div class="tbl-list">
+                                <table id="takein-file-table">
+                                    <caption><strong>선택한 반입자료 목록</strong>
+                                        <p>번호, 파일명, 반입사유, 요청날짜, 결과, 사유</p>
+                                    </caption>
+                                    <colgroup>
+                                        <col style="width:7%;">
+                                        <col style="width:auto">
+                                        <col style="width:30%;">
+                                        <col style="width:12%;">
+                                        <col style="width:10%;">
+                                        <col style="width:20%;">
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">번호</th>
+                                            <th scope="col">파일명</th>
+                                            <th scope="col">반입사유</th>
+                                            <th scope="col">요청날짜</th>
+                                            <th scope="col">결과</th>
+                                            <th scope="col">사유</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!--//tbl-list-->
+                        </div>
+                        <!--//scroll-table-->
+
+                        <div class="btns-wrap mt50 mb40">
+                            <a href="#" class="btns gray" onclick="KDATA.modalLayer.close(); return false;" id="takeinFileClose1">닫기</a>
+                            <!-- 김민정(201104) - 신청자 본인만 컨트롤 가능 -->
+
+                        </div>
+
+                        <!--  김민정(201014) - 사용중 상태일 경우, 신청자 본인일 때만 반입자료 추가 가능-->
+
+                    </div>
+                </div>
+            </div>
+            <!--//반입자료 popup-->
+
+            <!--반출신청 안내 popup-->
+            <div class="layer-popup mypage" id="fma02_pop011">
+                <div class="dimmed"></div>
+                <div class="pop-area">
+                    <div class="pop-content">
+                        <h3 class="fs20 fwn">반출신청</h3>
+                        <hr class="dark-45">
+
+                        <div class="in-sec">
+                            <!--p 클래스명 주의 -->
+                            <p class="left pt40 pb10 blue fw5">안심구역 내에서 반출 신청하신 파일에 대한 심의 현황입니다.</p>
+                            <p class="left pb10">심의가 완료되면 신청하신 자료를 다운로드 받을 수 있습니다.</p>
+                            <p class="left pb10 fw5 dark-45">단, 파일 본문 중 개인정보 등이 포함되어 있거나 반려사유가 있는 파일의 경우 다운로드를 받으실 수 없습니다.</p>
+                            <p class="left pb40 bb-gray-d8">반출신청에 대한 변경은 안심구역 내의 보안 시스템에서만 가능합니다.</p>
+                        </div>
+                        <div class="btns-wrap">
+                            <a href="#" class="btns" onclick="KDATA.modalLayer.close(); return false;">확인</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--//반출신청 안내 popup-->
+
+            <!--참고자료 popup-->
+            <div class="layer-popup mypage" id="fma02_pop04">
+                <div class="dimmed"></div>
+                <div class="pop-area type-table">
+                    <div class="pop-content">
+                        <h3 class="fs20 fwn">참고자료</h3>
+                        <hr class="dark-45">
+
+                        <div class="in-sec">
+                            <!--p 클래스명 주의 -->
+                            <p class="left pt30 pb20 fs16">신청한 참고자료 목록입니다.</p>
+                        </div>
+                        <p class="tit_dot mb20">전체자료 <span class="blue">0</span>건</p>
+                        <div class="scroll-table row5">
+                            <div class="tbl-list">
+                                <table>
+                                    <caption><strong>선택한 참고자료 목록</strong>
+                                        <p>번호, 파일명</p>
+                                    </caption>
+                                    <colgroup>
+                                        <col style="width:17%;">
+                                        <col style="width:auto">
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" class="w17p">번호</th>
+                                            <th scope="col">파일명</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!--//tbl-list-->
+                        </div>
+                        <!--//scroll-table-->
+                        <div class="btns-wrap mt50 mb40">
+                            <a href="#" class="btns gray" onclick="KDATA.modalLayer.close(); return false;">닫기</a>
+                            <!-- 김민정(201104) - 신청자 본인만 컨트롤 가능 -->
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--//참고자료 popup-->
+
+            <!--반려사유 popup-->
+            <div class="layer-popup mypage" id="fma02_pop05">
+                <div class="dimmed"></div>
+                <div class="pop-area">
+                    <div class="pop-content">
+                        <h3 class="fs20 fwn">반려사유</h3>
+                        <hr class="dark-45">
+
+                        <div class="in-sec">
+                            <pre class="content pt40 pb10 left"></pre>
+                        </div>
+                        <div class="btns-wrap">
+                            <a href="#" class="btns" onclick="KDATA.modalLayer.close(); return false;">확인</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--//반려사유 popup-->
+
+            <!--반출신청 안내 popup-->
+            <div class="layer-popup mypage" id="fma02_pop06">
+                <div class="dimmed"></div>
+                <div class="pop-area vertical">
+                    <div class="pop-content">
+                        <h3 class="fs20 fwn">반출신청</h3>
+                        <hr class="dark-45">
+
+                        <div class="in-sec">
+                            <!--p 클래스명 주의 -->
+                            <p class="left pt40 pb10 blue fw5">안심구역 내에서 반출 신청하신 파일에 대한 심의 현황입니다.</p>
+                            <p class="left pb10">심의가 완료되면 신청하신 자료를 다운로드 받을 수 있습니다.</p>
+                            <p class="left pb10 fw5 dark-45">단, 파일 본문 중 개인정보 등이 포함되어 있거나 반려사유가 있는 파일의 경우 다운로드를 받으실 수 없습니다.</p>
+                            <p class="left pb40 bb-gray-d8">반출신청에 대한 변경은 안심구역 내의 보안 시스템에서만 가능합니다.</p>
+                        </div>
+                        <div class="btns-wrap">
+                            <a href="#" class="btns" onclick="KDATA.modalLayer.close(); return false;">확인</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--//반출신청 안내 popup-->
+
+            <!--반출신청자료 popup-->
+            <div class="layer-popup mypage" id="fma02_pop07">
+                <div class="dimmed"></div>
+                <div class="pop-area type-table">
+                    <div class="pop-content">
+                        <h3 class="fs20 fwn">반출신청자료</h3>
+                        <hr class="dark-45">
+
+                        <div class="in-sec">
+                            <!--p 클래스명 주의 -->
+                            <p class="left pt30 pb20 fs16">반출 신청한 자료입니다.<br>승인된 자료만 다운로드 가능합니다.</p>
+                        </div>
+                        <p class="tit_dot mb20">전체자료 <span class="blue tkoutCnt"></span>건</p>
+                        <div class="scroll-table row5">
+                            <div class="tbl-list type03 h245">
+                                <table>
+                                    <caption><strong>선택한 반출신청자료 목록</strong>
+                                        <p>상태, 파일명</p>
+                                    </caption>
+                                    <colgroup>
+                                        <col style="width:15%;">
+                                        <col style="width:auto">
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" class="w15p">상태</th>
+                                            <th scope="col">파일명</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>승인</td>
+                                            <td>kkkkjksofsf00</td>
+                                        </tr>
+                                        <tr class="return">
+                                            <td>반려</td>
+                                            <td>abc123456@
+                                                <div class="box_grayf5 mt05">
+                                                    <span class="dark-45">반려 사유 : </span>
+                                                    개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함
+                                                    ` 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>승인</td>
+                                            <td>kkkkjksofsf00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>승인</td>
+                                            <td>kkkkjksofsf00</td>
+                                        </tr>
+                                        <tr class="return">
+                                            <td>반려</td>
+                                            <td>abc123456@
+                                                <div class="box_grayf5 mt05">
+                                                    <span class="dark-45">반려 사유 : </span>
+                                                    개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함
+                                                    ` 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함 개인정보 포함
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!--//tbl-list-->
+                        </div>
+                        <!--//scroll-table-->
+                        <div class="btns-wrap mt50 mb40">
+                            <a href="#" class="btns gray" onclick="KDATA.modalLayer.close(); return false;">닫기</a>
+                            <!-- 김민정(201104) - 신청자 본인만 컨트롤 가능 -->
+
+                            <a href="#" class="btns btnTkoutDownload">다운로드</a>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--//반출신청자료 popup-->
+
+            <!-- 21.10.14 이용종료 popup // 버튼 기능 개발 -->
+            <div class="layer-popup mypage" id="useEnd_pop">
+                <div class="dimmed"></div>
+                <div class="pop-area type-table">
+                    <div class="pop-content">
+                        <h3 class="pop-title">이용종료</h3>
+
+                        <!-- 이용종료 컨텐츠 -->
+                        <div class="useEnd_conts">
+                            <ul>
+                                <li>
+                                    <p class="info_txt">
+                                        1일 이상의 안심구역 이용기간 신청을 하고, 중도에 방문없이 이용종료를 할 때 (신청한 날짜가 이용종료날짜)
+                                    </p>
+                                    <p class="btns_box">
+                                        <button class="btns" id="btnUseEndToday">방문 전 이용종료</button>
+                                    </p>
+                                </li>
+                                <li>
+                                    <p class="info_txt">
+                                        1일 이상의 안심구역 이용기간 신청을 하고, 중도에 안심구역 방문하고 이용종료를 할 때 (신청한 다음날짜가 이용종료 날짜)
+                                    </p>
+                                    <p class="btns_box">
+                                        <button class="btns" id="btnUseEnd">방문 후 이용종료</button>
+                                    </p>
+                                </li>
+                            </ul>
+                        </div>
+                        <!-- //이용종료 컨텐츠 -->
+
+                        <div class="btns-wrap mt50 mb40">
+                            <button class="btns gray min-w194" onclick="KDATA.modalLayer.close(); return false;">닫기</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- //21.10.14 이용종료 popup -->
+
+            <!--참가 취소 사유 popup-->
+            <div class="layer-popup mypage" id="fma02_pop08">
+                <div class="dimmed"></div>
+                <div class="pop-area">
+                    <div class="pop-content">
+                        <h3 class="fs20 fwn">참가 취소 사유 입력</h3>
+                        <hr class="dark-45">
+
+                        <div class="in-sec">
+                            <p class="p_index_title">분석 캠프 신청 내용</p>
+                            <p class="p_index_list">
+                                <span class="tit_dot">분석캠프명 : 데이터안심구역 및 분석(Rapid Miner) 입문과정</span>
+                                <span class="tit_dot">데이터안심구역 센터명 : 서울센터</span>
+                                <span class="tit_dot">신청자 : 박성원</span>
+                            </p>
+                        </div>
+
+                        <textarea id="purpose" class="mt00 -textarea1" rows="5" placeholder="참가 취소 사유를 최소 100자~최대 5000자로 작성해 주세요." title="참가 취소 사유를 최소 100자~최대 5000자로 작성해 주세요"></textarea>
+                        <p class="alert error-contents on">※ 분석 캠프 참가 신청 후 특별한 사유 없이 취소하거나 미 참가하실 경우 차후 <br>분석 캠프 참가에 대해서 제한이 있을 수 있습니다.</p>
+
+                        <div class="btns-wrap">
+                            <a href="#" class="btns" onclick="KDATA.modalLayer.close(); return false;">확인</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--//참가 취소 사유 popup-->
+
+        </div>
+        <div id="footer">
+
+
+
+            <link rel="stylesheet" href="/static/css/jquery.mCustomScrollbar.min.css">
+
+            <!--footer upper-->
+            <div class="foot-upper -renew">
+                <a href="/" class="logo" aria-label="메인으로 이동"><img src="/static/images/common/logo_footer.png" alt="K-data 한국데이터산업진흥원 로고"></a>
+                <ul>
+                    <li><a href="/svc/page/policy/privacy.do" class="fw-bold">개인정보처리방침</a></li>
+                    <li><a href="/svc/page/policy/terms_of_use.do">이용약관</a></li>
+                    <li><a href="/svc/page/policy/marketing.do" class="brnone-r">마케팅정보수신동의</a></li>
+                    <li><a href="javascript:;" onclick="KDATA.modalLayer.open($(this),'ffo_popup','890px')" class="brnone-r">이메일 무단수집거부</a></li>
+                    <li class="snslogo -mo-ver">
+                        <a href="https://blog.naver.com/datasafetyzone" target="_blank" title="새창열림">
+                            <img src="/static/images/common/ico_blog.png" alt="blog">
+                        </a>
+                        <a href="https://www.youtube.com/channel/UCE9mJaf0hEWw7rtkyG3p7Nw" target="_blank" title="새창열림">
+                            <img src="/static/images/common/ico_youtube.png" alt="youtube">
+                        </a>
+                        <a title="pdf 파일보기" class="webmark" href="/static/pdf/web-accessibility-auth.pdf" target="_blank">
+                            <img src="/static/images/common/walogo.png" class="wa" alt="(사)한국장애인단체총연합회 한국웹접근성인증평가원 웹 접근성 우수사이트 인증마크(WA인증마크)">
+                        </a>
+                    </li>
+                    <li class="sitelist">
+                        <div class="selbox">
+                            <dl>
+                                <dt>
+                                    <!-- 클릭 시 is-open 클래스 추가 -->
+                                    <button class="ft-selbtn" aria-haspopup="listbox" aria-controls="site-listbox" aria-expanded="false">연관사이트</button>
+                                </dt>
+                                <dd class="is-selsub">
+                                    <div class="scroll_sitelist">
+                                        <ul id="site-listbox" role="listbox">
+                                            <li role="none">
+                                                <a href="http://www.msit.go.kr" target="_blank" title="새창열림" role="option"><span>과학기술정보통신부</span></a>
+                                            </li>
+                                            <li role="none">
+                                                <a href="http://www.kdata.or.kr" target="_blank" title="새창열림" role="option"><span>한국데이터산업진흥원</span></a>
+                                            </li>
+                                            <li role="none">
+                                                <a href="http://www.datastore.or.kr" target="_blank" title="새창열림" role="option"><span>데이터스토어</span></a>
+                                            </li>
+                                            <li role="none">
+                                                <a href="http://data.kostat.go.kr/sbchome/intro.do" target="_blank" title="새창열림" role="option"><span>통계빅데이터센터</span></a>
+                                            </li>
+                                            <li role="none">
+                                                <a href="https://www.hira.or.kr/main.do" target="_blank" title="새창열림" role="option"><span>건강보험심사평가원</span></a>
+                                            </li>
+                                            <li role="none">
+                                                <a href="https://www.car365.go.kr/" target="_blank" title="새창열림" role="option"><span>한국교통안전공단</span></a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <button class="ft-selbtn-close" aria-label="close">
+                                        <span class="blind">연관사이트 모음 닫기</span>
+                                    </button>
+                                </dd>
+                            </dl>
+                        </div>
+                    </li>
+                    <li class="snslogo -pc-ver">
+                        <a href="https://blog.naver.com/datasafetyzone" target="_blank" title="새창열림">
+                            <img src="/static/images/common/ico_blog.png" alt="blog">
+                        </a>
+                        <a href="https://www.youtube.com/channel/UCE9mJaf0hEWw7rtkyG3p7Nw" target="_blank" title="새창열림">
+                            <img src="/static/images/common/ico_youtube.png" alt="youtube">
+                        </a>
+                        <a title="pdf 파일보기" class="webmark" href="/static/pdf/web-accessibility-auth.pdf" target="_blank">
+                            <img src="/static/images/common/walogo.png" class="wa" alt="(사)한국장애인단체총연합회 한국웹접근성인증평가원 웹 접근성 우수사이트 인증마크(WA인증마크)">
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <!--//footer upper-->
+            <!--footer lower-->
+            <div class="foot-lower">
+                <div class="infobox">
+                    <address>
+                        <ul>
+                            <li><span>기관명</span><span>한국데이터산업진흥원</span></li>
+                            <li class="line-mo-dpno"><span>원장</span><span>윤혜정</span></li>
+                            <li><span>사업자등록번호</span><span>102-82-08963</span></li>
+                        </ul>
+                        <ul>
+                            <li class="line-mo-dpno"><span class="dpno-mobile">주소</span><span>(04513) 서울시 중구 세종대로9길 42 부영빌딩 7층</span></li>
+                            <li><span>FAX</span><span>02-318-5040</span></li>
+                        </ul>
+                        <ul>
+                            <li><span>사이트 이용문의</span><span class="tel"><a class="jsTel">02-3708-5484</a></span><span>(월~금 09:00 ~ 18:00, 공휴일 제외)</span></li>
+                        </ul>
+                    </address>
+                </div>
+                <div class="copybox">
+                    <span>Copyright © KOREA Data Agency. All rights reserved.</span>
+                </div>
+            </div>
+            <!--//footer lower-->
+
+            <!--이메일 무단수집거부 popup-->
+            <div class="layer-popup" id="ffo_popup">
+                <div class="dimmed"></div>
+                <div class="pop-area email_pop trans_pop">
+                    <h3 class="pop-tit left">이메일 무단수집거부</h3>
+                    <div class="pop-content">
+                        <!-- info_box -->
+                        <div class="info_box">
+                            <div class="email_info"></div>
+                            <p class="txt">
+                                본 웹사이트에 게시된 이메일 주소가 전자우편 수집 프로그램이나 그 밖의 기술적인 장치를 이용하여 무단
+                                으로 수집되는 것을 거부하며, 이를 위반시 정보통신법에 의해 형사처벌됨을 유념하시기 바랍니다.
+                            </p>
+                        </div>
+                        <!--// info_box -->
+                        <!-- law_wrap -->
+                        <div class="law_wrap">
+                            <p class="blue fs18">정보통신망 이용촉진 및 정보보호 등에 관한 법률</p>
+                            <p class="mt10">제74조 (벌칙)</p>
+                            <ul class="gray-79">
+                                <li class="mt10">① 다음 각 호의 어느 하나에 해당하는 자는 1년 이하의 징역 또는 1천만원 이하의 벌금에 처한다. (개정 2012.2.17., 2014.5.28.)</li>
+                                <li>1. 제8조제4항을 위반하여 비슷한 표시를 한 제품을 표시·판매 또는 판매할 목적으로 진열한 자</li>
+                                <li>2. 제44조의7제1항제1호의 규정을 위반하여 음란한 부호·문언·음향·화상 또는 영상을 배포·판매·임대하거나 공공연하게 전시한 자</li>
+                                <li>3. 제44조의7제1항제3호의 규정을 위반하여 공포심이나 불안감을 유발하는 부호·문언·음향·화상 또는 영상을 반복적으로 상대방에게 도달하게 한 자</li>
+                                <li>4. 제50조제5항의 규정을 위반하여 기술적 조치를 한 자</li>
+                                <li>5. 삭제 (2014.5.28)</li>
+                                <li>6. 제50조의8을 위반하여 광고성 정보를 전송한 자</li>
+                                <li>7. 제53조제4항을 위반하여 등록사항의 변경등록 또는 사업의 양도·양수 또는 합병·상속의 신고를 하지 아니한 자</li>
+                                <li class="mt10">② 제1항제3호의 죄는 피해자가 구체적으로 밝힌 의사에 반하여 공소를 제기할 수 없다. [전문개정 2008.6.13 ]</li>
+                            </ul>
+                            <hr class="mt30 gray-79">
+                        </div>
+                        <!--// law_wrap -->
+                        <div class="btns-wrap">
+                            <a href="#" class="btns" onclick="KDATA.modalLayer.close(); return false;">닫기</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--//이메일 무단수집거부 popup-->
+
+            <!-- 마케팅정보수신동의 popup-->
+            <div class="layer-popup" id="mk_popup">
+                <div class="dimmed"></div>
+                <div class="pop-area email_pop trans_pop">
+                    <h3 class="pop-tit left">마케팅정보수신동의</h3>
+                    <div class="pop-content">
+                        ppt69 참고.
+                        마케팅 정보 수신 동의 내역 내용 전달 요망
+                        <!-- info_box -->
+                        <!-- <div class="info_box">
+<div class="email_info"></div>
+<p class="txt">
+본 웹사이트에 게시된 이메일 주소가 전자우편 수집 프로그램이나 그 밖의 기술적인 장치를 이용하여 무단
+으로 수집되는 것을 거부하며, 이를 위반시 정보통신법에 의해 형사처벌됨을 유념하시기 바랍니다.
+</p>
+</div> -->
+                        <!--// info_box -->
+                        <!-- law_wrap -->
+                        <!-- <div class="law_wrap">
+<p class="blue fs18">정보통신망 이용촉진 및 정보보호 등에 관한 법률</p>
+<p class="mt10">제74조 (벌칙)</p>
+<ul class="gray-79">
+<li class="mt10">① 다음 각 호의 어느 하나에 해당하는 자는 1년 이하의 징역 또는 1천만원 이하의 벌금에 처한다. (개정 2012.2.17., 2014.5.28.)</li>
+<li>1. 제8조제4항을 위반하여 비슷한 표시를 한 제품을 표시·판매 또는 판매할 목적으로 진열한 자</li>
+<li>2. 제44조의7제1항제1호의 규정을 위반하여 음란한 부호·문언·음향·화상 또는 영상을 배포·판매·임대하거나 공공연하게 전시한 자</li>
+<li>3. 제44조의7제1항제3호의 규정을 위반하여 공포심이나 불안감을 유발하는 부호·문언·음향·화상 또는 영상을 반복적으로 상대방에게 도달하게 한 자</li>
+<li>4. 제50조제5항의 규정을 위반하여 기술적 조치를 한 자</li>
+<li>5. 삭제 (2014.5.28)</li>
+<li>6. 제50조의8을 위반하여 광고성 정보를 전송한 자</li>
+<li>7. 제53조제4항을 위반하여 등록사항의 변경등록 또는 사업의 양도·양수 또는 합병·상속의 신고를 하지 아니한 자</li>
+<li class="mt10">② 제1항제3호의 죄는 피해자가 구체적으로 밝힌 의사에 반하여 공소를 제기할 수 없다. [전문개정 2008.6.13 ]</li>
+</ul>
+<hr class="mt30 gray-79">
+</div> -->
+                        <!--// law_wrap -->
+                        <div class="btns-wrap">
+                            <a href="#" class="btns" onclick="KDATA.modalLayer.close(); return false;">닫기</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--// 마케팅정보수신동의 popup-->
+
+            <script>
+                (function($) {
+                    $(window).on("load", function() {
+                        $(".scroll_sitelist").mCustomScrollbar({
+                            /* keyboard default options */
+                            keyboard: {
+                                enable: true,
+                                scrollType: "stepless",
+                                scrollAmount: "auto"
+                            },
+                            scrollButtons: true,
+                        });
+
+                        // 모바일 접속 시, tel link 추가
+                        var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent) ? true : false;
+                        if (isMobile) {
+                            var jsTel = $('.jsTel');
+                            jsTel.map(function(i) {
+                                var $this = $(jsTel[i]);
+                                $this.css('pointer-events', 'all');
+                                $this.attr('href', 'javascript:;');
+                                $this.attr('aria-label', '모바일 기기에서 클릭하면 ' + $this.text() + '로 전화 연결됩니다.');
+                                $this.on("click", function() {
+                                    location.href = 'tel:' + $this.text();
+                                    console.log('tel:' + $this.text());
+                                })
+                            });
+                        }
+                    });
+                })(jQuery);
+            </script>
+        </div>
+            <!--//footer area-->
+        </div>
+    </div>
+
+</body>
+</html>
