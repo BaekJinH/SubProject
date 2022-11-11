@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+        <!-- <meta name="viewport" content="width=device-width, user-scalable=no"> -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+        <meta name="format-detection" content="telephone=no">
+        <meta name="title" content="">
+        <meta name="description" content="">
+        <meta name="keywords" content="">
+        <title>수료증 원본</title>
+        <link rel="shortcut icon" type="image/x-icon" href="/static/images/common/favicon.ico">
+        <link rel="stylesheet" href="/static/css/reset.css">
+        <link rel="stylesheet" href="/static/css/modules.css">
+        <link rel="stylesheet" href="/static/css/contents.css">
+        <link rel="stylesheet" href="/static/css/dummy.css"><!-- 신규 콘텐츠 용, 꼭 마지막에 호출한다 -->
+        <link rel="stylesheet" href="/static/css/main.css">
+        <!-- 수료증 추가 -->
+        <link rel="stylesheet" href="/static/css/complet.css">
+        <script src="/static/js/jquery-1.12.4.min.js"></script>
+        <script src="/static/js/jshashtable-2.1.js"></script>
+        <script src="/static/js/jquery.numberformatter-1.2.3.js"></script>
+        
+        <script src="/static/js/complet.js"></script>
+        <script src="/static/js/ui_pub.js"></script>
+    
+
+        <!-- 홈페이지 보완 -->
+        <link rel="stylesheet" href="/static/css/page.css">
+        <!-- 슬라이더 이용시 -->
+        <script src="/static/js/swiper.min.js"></script>
+        <link rel="stylesheet" href="/static/css/swiper.min.css">
+        <!-- //슬라이더 이용시 -->
+
+        <!-- 수료증 원본 홈페이지 -->
+        <link rel="stylesheet" href="/static/css/original.css">
+        <script src="/static/js/original.js"></script>
+        <!--[if lte ie 9]>
+    <script src="/static/js/css3-mediaqueries.min.js"></script>
+    <![endif]-->
+    
+    
+        <link rel="stylesheet" href="/static-dev/css/portal.css">
+        <script src="/static-dev/js/portal.js"></script>
+        <script src="/static-dev/js/jquery.blockUI.js"></script>
+        <script src="/static-dev/js/mustache.min.js"></script>
+    
+    
+    
+        <script src="/static/js/jquery.mCustomScrollbar.js"></script>
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155313055-1"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+    
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag('js', new Date());
+    
+            gtag('config', 'UA-155313055-1');
+        </script>
+    
+    
+    
+        <script>
+            $(function() {
+                $("title").html("홈 > 나의신청관리 > 상세");
+    
+                var tkinAttachmentIds = [];
+                var referAttachmentIds = [];
+                var tkoutAttachmentIds = [];
+    
+                var takeinFileSize = 0;
+                var uploadFileMaxSize = 314572800;
+                var allowedFileExts = 'TXT/XLS/XLSX/PDF/DOC/DOCX/PPT/PPTX/HWP/JPG/CSV/CVS/R/ODT/IPYNB'.split("/");
+    
+                var team = 'false';
+                var linkInstitutionId = 'link_institution_af45424e05564406a5c5fac9966b9967';
+    
+                // 팀원 리스트 조회
+                selectTeamMember();
+    
+                // 공동분석가 조회
+                selectCoresearcher();
+    
+                // 안심구역인 경우 안심구역인 경우에만 이용데이터, 반입자료, 참조자료 조회
+                if (linkInstitutionId === 'kdata') {
+                    selectUseData();
+                    selectTakeinFile();
+                    selectReferenceFile();
+                }
+    
+                $('#btnAddComplete, #btnAddModify').click(function() {
+                    var text = '';
+                    if (linkInstitutionId === 'kdata') {
+                        if (this.id === 'btnAddComplete') {
+                            if (confirm('신청서를 작성하시겠습니까?')) {
+                                location.href = "/member/apply/add/data_index.do";
+                            }
+                        } else if (this.id === 'btnAddModify') {
+                            if (confirm('신청 내용을 변경하시겠습니까?')) {
+                                location.href = "/member/apply/add/data_index.do?applicationId=" + $(this).data('id');
+                            }
+                        }
+                    } else {
+                        if (this.id === 'btnAddComplete') {
+                            if (confirm('신청서를 작성하시겠습니까?')) {
+                                location.href = "/member/apply/add/fillout_linkInstitution_index.do";
+                            }
+                        } else if (this.id === 'btnAddModify') {
+                            if (confirm('신청 내용을 변경하시겠습니까?')) {
+                                location.href = "/member/apply/add/fillout_linkInstitution_index.do";
+                            }
+                        }
+                    }
+                });
+    
+    
+                $('#btnAddDelete, #btnAddCancel').click(function() {
+                    var text = '';
+    
+                    if (this.id === 'btnAddDelete') {
+                        text = '이용신청을 삭제하시겠습니까?';
+                    } else if (this.id === 'btnAddCancel') {
+                        text = '이용신청을 취소하시겠습니까?';
+                    }
+    
+                    if (confirm(text)) {
+                        component.post({
+                            url: "/member/apply/mine/apply_cancel.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            },
+                            success: function(data, status, xhr) {
+                                location.href = '/member/apply/mine/index.do?lastCondition=true';
+                            }
+                        });
+                    }
+                });
+    
+                // 김민정(201029) - 반출신청취소에 apId 추가
+    
+                $('#takeoutFileTable').on('click', '.btnTkCancel', function() {
+                    // var trIndex = $(this).closest('tr').index() + 1;
+                    var apId = $(this).attr("data-apid");
+    
+                    if (confirm('신청을 취소하시겠습니까?')) {
+                        component.post({
+                            url: "/member/apply/mine/takeout_cancel.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                                apId: apId
+                            },
+                            success: function(data, status, xhr) {
+                                location.reload();
+                            }
+                        });
+                    }
+                });
+    
+    
+                $('#btnRequire').click(function() {
+                    if (confirm('동일한 내용으로 다시 신청하시겠습니까?')) {
+                        component.post({
+                            url: "/member/apply/mine/retry.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            },
+                            success: function(data, status, xhr) {
+                                location.href = '/member/apply/add/data_index.do?applicationId=' + data.applicationId;
+                            }
+                        });
+                    }
+                });
+    
+    
+                // 21.10.14 주석처리
+                $('#btnUseEndToday').click(function() {
+                    if (confirm('당일 방문 전 이용종료를 하시겠습니까?')) {
+                        component.post({
+                            url: "/member/apply/mine/use_end_today.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            },
+                            success: function(data, status, xhr) {
+                                alert('오늘날짜로 이용종료 되었습니다.');
+                                location.reload();
+                            }
+                        });
+                    }
+                });
+                // 21.10.14 주석처리
+                $('#btnUseEnd').click(function() {
+                    if (confirm('당일 방문 후 이용종료를 하시겠습니까?')) {
+                        component.post({
+                            url: "/member/apply/mine/use_end.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            },
+                            success: function(data, status, xhr) {
+                                alert('처리되었습니다. 내일날짜로 이용종료 될 예정입니다.');
+                                location.reload();
+                            }
+                        });
+                    }
+                });
+    
+    
+                $('#takeinFileClose1, #takeinFileClose2').click(function(e) {
+                    e.preventDefault();
+    
+                    // 반입 팝업 닫기 시 기존에 추가 반입으로 등록했던 파일들을 모두 삭제 하고 초기화 한다.
+                    var attachmentIds = []; // 삭제할 파일 ID
+                    var fileSizes = []; // 삭제할 파일 사이즈
+    
+                    $('#takein-file-add-table input:checkbox').each(function(i, e) {
+                        var data = $(this).data('id');
+    
+                        if (data && data.indexOf(",") > -1) {
+                            attachmentIds.push(data.split(",")[0]);
+                            fileSizes.push(data.split(",")[1]);
+                        }
+                    });
+    
+                    // 삭제할 파일 이 있는 경우에만 삭제 요청처리
+                    if (attachmentIds.length > 0) {
+                        component.post({
+                            url: "/member/apply/mine/add_takeinfile_remove.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                                attachmentIds: attachmentIds
+                            },
+                            success: function(data, status, xhr) {
+                                // tbody를 비워주고 count를 0으로 세팅한다.
+                                $('#takein-reason').val('');
+                                $('#takeinFileCntAdd').text(0);
+                                $('#takein-file-add-table tbody').html('<tr><td colspan="3" class="center">추가 신청한 반입자료가 없습니다.</td></tr>');
+    
+                                // 추가 되는 만큼 파일 사이즈를 빼준다.
+                                for (var i = 0; i < fileSizes.length; ++i) {
+                                    takeinFileSize -= Number(fileSizes[i]);
+                                }
+                            }
+                        });
+                    } else {
+                        $('#takein-reason').val('');
+                        $('#takeinFileCntAdd').text(0);
+                        $('#takein-file-add-table tbody').html('<tr><td colspan="3" class="center">추가 신청한 반입자료가 없습니다.</td></tr>');
+                    }
+    
+                    KDATA.modalLayer.close();
+                });
+    
+    
+                $('.btnTkinDownload').click(function() {
+                    if (tkinAttachmentIds != null && tkinAttachmentIds.length > 0) {
+                        if (confirm("반입자료를 다운로드 하겠습니까?")) {
+                            component.submit({
+                                url: "/member/apply/mine/takein_download.do",
+                                data: {
+                                    applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                                    attachmentId: tkinAttachmentIds
+                                }
+                            });
+                        }
+                    } else {
+                        alert("다운로드할 반입자료가 없습니다.")
+                    }
+                });
+    
+    
+                $('#takein-onclick').click(function() {
+                    var $takeinReason = $('#takein-reason');
+                    var attachmentIds = []; // 추가 할 파일 ID
+    
+                    $('#takein-file-add-table input:checkbox').each(function(i, e) {
+                        var data = $(this).data('id');
+    
+                        if (data && data.indexOf(",") > -1) {
+                            attachmentIds.push(data.split(",")[0]);
+                        }
+                    });
+    
+                    if (attachmentIds.length == 0) {
+                        // 파일 등록 리스트 체크(파일 목록이 있어야 함)
+                        alert("추가 신청한 반입자료가 없습니다.");
+                    } else if ($.isBlank($takeinReason.val())) {
+                        // 반입 사유 입력
+                        alert('추가반입 사유를 입력하세요');
+    
+                        $takeinReason.val("");
+                        $takeinReason.focus();
+                    } else if (confirm("추가반입을 신청하시겠습니까?")) {
+                        // 김민정(201014) - 반입신청 테이블에 추가
+                        component.post({
+                            url: "/member/apply/mine/add_takeinfile_insert.do",
+                            data: {
+                                applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                                applicationReason: $takeinReason.val(),
+                                attachmentIds: attachmentIds
+                            },
+                            success: function(data, status, xhr) {
+                                // 반입신청이 되면 반입사유 삭제
+                                $('#takein-reason').val('');
+    
+                                // 추가 신청 반입자료를 삭제
+                                $('#takeinFileCntAdd').text(0);
+                                $('#takein-file-add-table tbody').html('<tr><td colspan="3" class="center">추가 신청한 반입자료가 없습니다.</td></tr>');
+    
+                                // 새로 반입자료를 호출한다.
+                                selectTakeinFile();
+                            }
+                        });
+                    }
+                });
+    
+    
+                $('#takein-reason').keyup(function(e) {
+                    var inputText = $(this).val();
+                    if (inputText.length > 80) {
+                        alert('추가반입 사유는 최대 80자까지 등록 가능합니다');
+                        inputText.substr(0, 79);
+                    }
+                })
+    
+    
+                $('#btnAddTakeinFile').click(function(e) {
+                    e.preventDefault();
+    
+                    $(this).prev().click();
+                });
+    
+    
+                $('#fma02_pop03').on('change', '.file', function() {
+                    var $this = $(this);
+                    var fileSize = $this.prop('files')[0].size;
+                    var fileExt = $this.prop('files')[0].name.slice($this.prop('files')[0].name.lastIndexOf(".") + 1);
+                    // 파일 업로드 시 파일 이름에 공백이 없어야 하며, 영문자와 숫자만 가능하도록 체크
+                    var fileName = $this.prop('files')[0].name.slice(0, $this.prop('files')[0].name.lastIndexOf("."));
+                    // 파일명은 공백없이 영문자와 숫자만 가능하도록 한다.
+                    var fileNamePattern = /^[A-Za-z0-9+]*$/g;
+    
+                    if (!fileNamePattern.test(fileName)) {
+                        alert('반입자료의 파일명에는 영문 대,소문자 및 숫자만 포함할 수 있습니다.(공백 및 한글 불가)');
+                        $this.val('');
+    
+                        return false;
+                    }
+    
+                    if (!isAllowedExt(fileExt)) {
+                        alert('지원하지 않는 파일 확장자가 포함되어 있습니다.(' + fileExt + ')');
+                        $this.val('');
+    
+                        return false;
+                    }
+    
+                    if (takeinFileSize + fileSize > uploadFileMaxSize) {
+                        alert('반입 가능한 최대 크기 (300 MB)를 초과하였습니다.');
+                        $this.val('');
+    
+                        return false;
+                    }
+    
+                    component.postMultipart({
+                        url: "/member/apply/mine/add_takeinfile_upload.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            file: $this.prop('files')[0]
+                        },
+                        success: function(data, status, xhr) {
+                            // 현재 파일의 값을 초기화 시킨다.
+                            $this.val('');
+    
+                            // upload한 파일정보가 있다면
+                            if (data && data.attachmentId && data.fileSize > 0) {
+                                // upload 된 파일이 전혀 없으면 tbody를 비워주고 count를 0으로 세팅한다.
+                                if ($('#takein-file-add-table input:checkbox').length == 0) {
+                                    $('#takeinFileCntAdd').text(0);
+                                    $('#takein-file-add-table tbody').empty();
+                                }
+    
+                                // 1건씩 생성 추가
+                                $('#takeinFileCntAdd').text(Number($('#takeinFileCntAdd').text()) + 1);
+    
+                                // index를 자료수로 세팅
+                                data.index = $('#takeinFileCntAdd').text();
+    
+                                $('#takein-file-add-table tbody').append(Mustache.render($('#takeInFile_add_data').html(), data));
+    
+                                // 추가 되는 만큼 파일 사이즈를 증가 시킨다.
+                                takeinFileSize += data.fileSize;
+    
+                                // 적용?????
+                                KDATA.dsgnForm();
+                            }
+                        }
+                    });
+                });
+    
+    
+                $('#btnRemoveTakeinFile').click(function(e) {
+                    e.preventDefault();
+    
+                    var attachmentIds = []; // 삭제할 파일 ID
+                    var fileSizes = []; // 삭제할 파일 사이즈
+    
+                    $('#takein-file-add-table input:checkbox').each(function(i, e) {
+                        if (this.checked) {
+                            var data = $(this).data('id');
+    
+                            if (data && data.indexOf(",") > -1) {
+                                attachmentIds.push(data.split(",")[0]);
+                                fileSizes.push(data.split(",")[1]);
+                            }
+                        }
+                    });
+    
+                    if (attachmentIds.length > 0) {
+                        if (confirm('선택 한 파일을 삭제하시겠습니까?')) {
+                            component.post({
+                                url: "/member/apply/mine/add_takeinfile_remove.do",
+                                data: {
+                                    applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                                    attachmentIds: attachmentIds
+                                },
+                                success: function(data, status, xhr) {
+                                    // 삭제된 갯수만큼 count 빼줌
+                                    $('#takeinFileCntAdd').text(Number($('#takeinFileCntAdd').text()) - attachmentIds.length);
+    
+                                    // 삭제 요청 된 tr을 삭제한다.
+                                    $('#takein-file-add-table input:checkbox:checked').closest("tr").remove();
+    
+                                    // upload 된 파일이 전혀 없으면 tbody를 비워주고 count를 0으로 세팅한다.
+                                    if ($('#takein-file-add-table input:checkbox').length == 0) {
+                                        $('#takeinFileCntAdd').text(0);
+                                        $('#takein-file-add-table tbody').html('<tr><td colspan="3" class="center">추가 신청한 반입자료가 없습니다.</td></tr>');
+                                    } else {
+                                        // 남은 파일이 존재한다면 index를 변경 시켜준다.
+                                        $('#takein-file-add-table input:checkbox').each(function(i, e) {
+                                            $(this).closest("tr").children(":first-child").text((i + 1));
+                                        });
+                                    }
+    
+                                    // 추가 되는 만큼 파일 사이즈를 빼준다.
+                                    for (var i = 0; i < fileSizes.length; ++i) {
+                                        takeinFileSize -= Number(fileSizes[i]);
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        alert("삭제할 파일을 선택하세요.");
+                    }
+                });
+    
+    
+                $('.btnRefDownload').click(function() {
+                    component.submit({
+                        url: "/member/apply/mine/refer_download.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            attachmentId: referAttachmentIds
+                        }
+                    });
+                });
+    
+    
+                $('.btnTkoutDownload').click(function() {
+                    component.submit({
+                        url: "/member/apply/mine/takeout_download.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            attachmentId: tkoutAttachmentIds
+                        }
+                    });
+                });
+    
+    
+                $('#takeoutFileTable').on('click', '.tkoutCnt2', function() {
+                    // var trIndex = $(this).closest('tr').index() + 1;
+                    var apId = $(this).attr("data-apid");
+    
+                    selectTakeoutFile(apId);
+    
+                    // 심의완료일때만 다운로드 버튼 보이게
+                    if ($(this).parent().prev().text() === '심의완료') {
+                        $('.btnTkoutDownload').show();
+                    } else {
+                        $('.btnTkoutDownload').hide();
+                    }
+                    KDATA.modalLayer.open($(this), 'fma02_pop07', '786px');
+                });
+    
+                // FIXME OJKIM ADDED FOR TEST
+                $('#btnQrCode').click(function() {
+                    window.open('/component/qrcode/index.do?a=apply_08eb96cf92a84600b9f9a3897d10578a', '_blank');
+                })
+                // FIXME OJKIM ADDED FOR TEST
+    
+    
+                function isAllowedExt(fileExt) {
+                    var fileExt = fileExt.toLowerCase();
+                    var isAllow = false;
+    
+                    allowedFileExts.some(function(e) {
+                        if (fileExt == e.toLowerCase()) {
+                            isAllow = true;
+                        }
+                    });
+    
+                    return isAllow;
+                }
+    
+    
+                function selectUseData() {
+                    component.get({
+                        url: "/member/apply/add/use_data_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a'
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop01 table tbody').empty();
+    
+                            if (data.length === 0) {
+                                $('#fma02_pop01 table tbody').html('<tr><td colspan="4" class="center">선택한 신청자료가 없습니다.</td></tr>');
+                            } else {
+                                $.each(data, function(i, e) {
+                                    var html;
+    
+                                    html += '<tr>';
+                                    html += '<td>' + (i + 1) + '</td>';
+                                    html += '<td class="left">';
+                                    html += '<span class="blue">' + e.categoryPath + '</span>';
+                                    html += '<br>' + e.dataNm;
+                                    html += '</td>';
+                                    html += '<td>' + e.institutionNm + '</td>';
+                                    html += '<td>' + e.fmtEnabled + '</td>';
+                                    html += '</tr>';
+    
+                                    $('#fma02_pop01 table tbody').append(html);
+                                });
+                            }
+                        }
+                    });
+                }
+    
+    
+                function selectTeamMember() {
+                    component.get({
+                        url: "/member/apply/add/teamMember_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a'
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop_team table tbody').empty();
+    
+                            // 신청자 정보는 필수로 등록
+                            var html = "";
+    
+                            html += "<tr>";
+                            html += "    <td>신청자</td>";
+                            html += "    <td>최철웅</td>";
+                            html += "    <td>nanonic3</td>";
+                            html += "    <td>디자인피커</td>";
+                            html += "</tr>";
+    
+                            if (data.length > 0) {
+                                $.each(data, function(i, e) {
+                                    html += "<tr>";
+                                    html += "    <td>팀원</td>";
+                                    html += "    <td>" + e.userNm + "</td>";
+                                    html += "    <td>" + e.loginId + "</td>";
+                                    html += "    <td>" + e.pstinstNm + "</td>";
+                                    html += "</tr>";
+                                });
+                            }
+    
+                            $('#fma02_pop_team table tbody').append(html);
+                        }
+                    });
+                }
+    
+    
+                function selectCoresearcher() {
+                    component.get({
+                        url: "/member/apply/add/coresearcher_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a'
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop_coresearcher table tbody').empty();
+    
+                            if (data.length === 0) {
+                                $('#fma02_pop_coresearcher table tbody').html('<tr><td colspan="4" class="center">공동분석가가 없습니다.</td></tr>');
+                            } else {
+                                $.each(data, function(i, e) {
+                                    var html;
+    
+                                    html += '<tr>';
+                                    html += '<td>공동분석가</td>';
+                                    html += '<td>' + e.userNm + '</td>';
+                                    html += '<td>' + e.loginId + '</td>';
+                                    html += '<td>' + e.pstinstNm + '</td>';
+                                    html += '</tr>';
+    
+                                    $('#fma02_pop_coresearcher table tbody').append(html);
+    
+                                });
+                            }
+                        }
+                    });
+                }
+    
+    
+                function selectTakeinFile() {
+                    component.get({
+                        url: "/member/apply/add/takein_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            orderNumber: 0
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop03 #takein-file-table tbody').empty();
+    
+                            // 반입자료와 반입자료 사이즈를 초기화 해준다.
+                            tkinAttachmentIds = [];
+                            takeinFileSize = 0;
+    
+                            // 반입자료 리스트 세팅
+                            if (data.length === 0) {
+                                $('#fma02_pop03 #takein-file-table tbody').html('<tr><td colspan="6" class="center">신청한 반입자료가 없습니다.</td></tr>');
+                            } else {
+                                $.each(data, function(i, e) {
+                                    var result = ""; // 결과
+                                    var reason = ""; // 사유
+    
+                                    result = (e.fileDeleted ? "삭제" : (e.takeinStatus === "APPLICATION" ? "신청" : (e.takeinStatus === "RECEIPT" ? "접수" : (e.takeinStatus === "CANCEL" ? "취소" : (e.approval == true ? "승인" : (e.approval == false ? "반려" : "임시저장"))))));
+                                    reason = (result === "삭제" ? e.deletedReason : (result === "취소" ? e.cancelReason : (result === "승인" || result === "반려" ? e.approvalReason : "")));
+    
+                                    e.index = i + 1;
+                                    e.result = result;
+                                    e.reason = reason;
+    
+                                    $('#takein-file-table tbody').append(Mustache.render($('#takeInFile_data').html(), e));
+    
+                                    // 반입자료를 배열에 저장하여 다운로드 가능하도록 함(삭제파일은 제외)
+                                    if (!e.fileDeleted) {
+                                        // 다운로드 저장
+                                        tkinAttachmentIds.push(e.attachmentId);
+                                        // 반입자료 파일 사이즈 저장
+                                        takeinFileSize += e.fileSize;
+                                    }
+                                });
+                            }
+    
+                            // 반입자료 갯수 세팅
+                            $('#takeinFileCnt').text(data.length);
+                            $('#takeinFileCntPopup').text(data.length);
+                        }
+                    });
+                }
+    
+    
+                function selectReferenceFile() {
+                    component.get({
+                        url: "/member/apply/add/refer_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a'
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop04 table tbody').empty();
+    
+                            // 참고자료 다운로드용 배열 초기화
+                            referAttachmentIds = [];
+    
+                            if (data.length === 0) {
+                                $('#fma02_pop04 table tbody').html('<tr><td colspan="2" class="center">신청한 참고자료가 없습니다.</td></tr>');
+                            } else {
+                                $.each(data, function(i, e) {
+                                    var html;
+    
+                                    html += '<tr>';
+                                    html += '<td>' + (i + 1) + '</td>';
+                                    html += ' <td>' + e.fileNm + '</td>';
+                                    html += '</tr>';
+    
+                                    $('#fma02_pop04 table tbody').append(html);
+    
+                                    // 참고자료 다운로드 저장 - 삭제 파일은 제외
+                                    if (!e.fileDeleted) {
+                                        referAttachmentIds.push(e.attachmentId);
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+    
+    
+                function selectTakeoutFile(apId) {
+                    component.get({
+                        url: "/member/apply/mine/takeout_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                            apId: apId
+                        },
+                        success: function(data, status, xhr) {
+                            $('#fma02_pop07 table tbody').empty();
+    
+                            // 반출파일 다운로드용 배열 초기화
+                            tkoutAttachmentIds = [];
+    
+                            if (data.length === 0) {
+                                $('#fma02_pop07 table tbody').html('<tr><td colspan="2" class="center">신청한 반출자료가 없습니다.</td></tr>');
+                            } else {
+                                $('.tkoutCnt').text(data.length);
+                                $('#takeoutFileTable tbody tr:eq(' + (apId - 1) + ') .tkoutCnt2').text((data.length < 10 ? '0' + data.length : data.length) + '건');
+                                $.each(data, function(i, e) {
+                                    var html = '';
+    
+                                    if (e.approval == null) {
+                                        html += '<tr>';
+                                        html += '<td>-</td>';
+                                        html += '<td>' + e.fileNm + '</td>';
+                                        html += '</tr>';
+                                    } else if (e.approval == true) {
+                                        html += '<tr>';
+                                        html += '<td>승인</td>';
+                                        html += '<td>' + e.fileNm + '</td>';
+                                        html += '</tr>';
+    
+                                        // 반출파일 승인 인 경우에만 다운로드 배열 저장
+                                        tkoutAttachmentIds.push(e.attachmentId);
+                                    } else if (e.approval == false) {
+                                        html += '<tr class="return">';
+                                        html += '<td>반려</td>';
+                                        html += '<td>' + e.fileNm;
+                                        html += '<div class="box_grayf5 mt05">';
+                                        html += '<span class="dark-45">반려 사유 : </span><pre class="content">' + e.approvalReason;
+                                        html += '</pre></div>';
+                                        html += '</td>';
+                                        html += '</tr>';
+                                    }
+    
+                                    $('#fma02_pop07 table tbody').append(html);
+                                });
+    
+                                // 다운로드 파일이 없는 경우 다운로드 버튼 삭제
+                                if (tkoutAttachmentIds.length == 0) {
+                                    $('.btnTkoutDownload').remove();
+                                }
+                            }
+                        }
+                    });
+                }
+    
+    
+                function selectTakeoutFileList() {
+                    component.post({
+                        url: "/member/apply/mine/takeout_total_list.do",
+                        data: {
+                            applicationId: 'apply_08eb96cf92a84600b9f9a3897d10578a',
+                        },
+                        success: function(takeoutList, status, xhr) {
+                            if (Object.keys(takeoutList).length > 0) $('#takeoutFileTable tbody').empty();
+    
+                            $.each(takeoutList, function(i, e) {
+                                e.cancelOk = false;
+    
+                                if (e.takeoutStatus === 'APPLICATION' || e.takeoutStatus === 'RECEIPT' || e.takeoutStatus === 'REVIEW_REQUEST' || e.takeoutStatus === 'REVIEW_CLOSING') {
+                                    e.cancelOk = true;
+                                }
+                                if (e.takeoutStatus === 'REVIEW_END' || e.takeoutStatus === 'REQUEST_CANCEL') {
+                                    e.cancelOk = false;
+                                }
+    
+                                // 심의완료가 되면 완료예정일을 완료일로 세팅
+                                if (e.takeoutStatus === 'REVIEW_END') {
+                                    e.reviewEndExpDt = e.reviewEndDt;
+                                }
+    
+                                $('#takeoutFileTable tbody').append(Mustache.render($('#takeoutFile-table').html(), e));
+                            });
+                        }
+                    });
+                }
+    
+                // 안심구역인 경우에만 반출 정보 리스트를 가지고 온다.
+                if (linkInstitutionId === 'kdata') {
+                    selectTakeoutFileList();
+                }
+            });
+        </script>
+    
+        <script type="x-tmpl-mustache" id="takeInFile_data">
+            <tr>
+            <td>{{index}}</td>
+            <td>{{fileNm}}</td>
+            <td>{{applicationReason}}</td>
+            <td>{{applicationDe}}</td>
+            <td>{{result}}</td>
+            <td>{{reason}}</td>
+                </tr>
+            </script>
+    
+        <script type="x-tmpl-mustache" id="takeInFile_add_data">
+            <tr>
+            <td>{{index}}</td>
+            <td><label for="{{attachmentId}}" class="pointer">{{fileNm}}</label></td>
+            <td>
+                <div class="dsgn-form">
+                    <span class="ele-chk square"><input type="checkbox" id="{{attachmentId}}" data-id="{{attachmentId}},{{fileSize}}" /></span>
+                </div>
+                </td>
+                </tr>
+            </script>
+    
+        <script type="x-tmpl-mustache" id="takeoutFile-table">
+            <tr style="height:50px">
+            <td class="center">{{apId}}</td>
+            <td class="center">{{fmtApplicationDt}}</td>
+            <td class="center">{{fmtReviewEndExpDt}}</td>
+            <td class="center">{{takeoutStatusNm}}</td>
+            {{#cancelOk}}
+                <td class="center"><button class="btns sm gray btnTkCancel" data-apid="{{apId}}">신청취소</button></td>
+            {{/cancelOk}}
+            {{^cancelOk}}
+                <td class="center"><span class="blue underline display-ib pointer tkoutCnt2" data-apid="{{apId}}">신청자료</span></td>
+            {{/cancelOk}}
+                </tr>
+            </script>
+    
+    
+    </head>
+<body>
+    <script>
+        (function($) {
+            $(window).on("load", function() {
+                $(".scroll_sitelist").mCustomScrollbar({
+                    /* keyboard default options */
+                    keyboard: {
+                        enable: true,
+                        scrollType: "stepless",
+                        scrollAmount: "auto"
+                    },
+                    scrollButtons: true,
+                });
+
+                // 모바일 접속 시, tel link 추가
+                var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent) ? true : false;
+                if (isMobile) {
+                    var jsTel = $('.jsTel');
+                    jsTel.map(function(i) {
+                        var $this = $(jsTel[i]);
+                        $this.css('pointer-events', 'all');
+                        $this.attr('href', 'javascript:;');
+                        $this.attr('aria-label', '모바일 기기에서 클릭하면 ' + $this.text() + '로 전화 연결됩니다.');
+                        $this.on("click", function() {
+                            location.href = 'tel:' + $this.text();
+                            console.log('tel:' + $this.text());
+                        })
+                    });
+                }
+            });
+        })(jQuery);
+    </script>
+</body>
+</html>

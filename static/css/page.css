@@ -25,6 +25,7 @@
 .sub_list dd {
     width:50% !important;
     /* background-color: blue; */
+    margin-bottom:3px;
 }
 
 .mine_btn_area > button {
