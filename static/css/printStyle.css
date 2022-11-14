@@ -1,0 +1,193 @@
+@media print {
+    /* Blue band */
+
+    .bandContainer {
+        position:absolute;
+        width:93%;
+        height:96%;
+        overflow:hidden;
+    }
+    .bandContainer > div {
+        position: absolute;
+        width:100px;
+        height:100px;
+    }
+    .bandContainer > div:nth-of-type(1){
+
+        top:-0%;
+        left:-0%;
+    }
+    .leftUpEle {
+        width:100%;
+        height:100%;
+        background-color:blue;
+        position: absolute;;
+        transform:rotate(45deg) translate(-50%, -50%);
+        bottom:0;
+        left:-50%;
+
+    }
+    .bandContainer > div:nth-of-type(2){
+
+        top:-0%;
+        right:-0%;
+    }
+
+    .rightUpEle {
+        width:100%;
+        height:100%;
+        background-color:blue;
+        position: absolute;;
+        transform:rotate(45deg) translate(-50%, -50%);
+        top:0;
+        right:-50%;
+
+    }
+    .bandContainer > div:nth-of-type(3){
+
+        bottom:-0%;
+        left:-0%;
+    }
+
+    .leftDownEle {
+        width:100%;
+        height:100%;
+        background-color:blue;
+        position: absolute;;
+        transform:rotate(45deg) translate(50%, 50%);
+        top:0;
+        left:-50%;
+
+    }
+    .bandContainer > div:nth-of-type(4){
+
+        bottom:-0%;
+        right:-0%;
+    }
+
+
+    .rightDownEle {
+        width:100%;
+        height:100%;
+        background-color:blue;
+        position: absolute;;
+        transform:rotate(45deg) translate(50%, 50%);
+        top:0;
+        right:-50%;
+
+    }
+
+
+    /* Blue Band Endline */
+    #printContent {
+        /* a4 크기 */
+        /* width:3508px;
+        height:2480px; */
+        height:100vh;
+        display:flex;
+        align-items: center;
+        justify-content: center;
+        position:relative;
+    }
+
+    .contentsWrap {
+        height:83%;
+        width:80%;
+        position:relative;
+    }
+    .backgroundText {
+        width:100%;
+        height:100%;
+        position:absolute;
+        background-image: url(/img/2019\ Kdata\ CI\ Signature-01.png);
+        background-size:55% 10%;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.3;
+    }
+
+    /* Print Contents */
+    #printContent  .dataNum {
+        font-size:16px;
+        font-weight:300;
+        height:10%;
+    }
+    #printContent .modalHead {
+        text-align: center;
+        font-family:'궁서체' !important;
+        font-size:30px;
+        height:15%;
+    }
+    #printContent  .modalInfo {
+        height:19%;
+        font-size:25px;
+        font-weight:600;
+    }
+    .tbody tr {
+    }
+    .tbody tr td {
+
+    }
+    .modalInfo .tableCls > td:nth-child(1) {
+        width:15%;
+    }
+
+    .colone {
+        padding-right:8px;
+        }
+    .colone
+    .justiCls > .dataLeft {
+        text-align:left;
+        width:50%;
+        display:inline-block;
+    }
+    .justiCls > .dataRight {
+        text-align:right;
+        width:50%;
+        display:inline-block;
+    }
+
+    tr td:nth-child(3) {
+        width:81%;
+    }
+
+    .tableDate > td:nth-child(1) {
+        width:20%;    
+    }
+    #printContent  .modalText {
+        font-family:'궁서체' !important;
+        width:100%;
+        height:33%;
+    }
+    .modalText > p {
+        line-height:53px;
+        font-size:31px;
+        font-weight:600;
+    }
+    #printContent  .modalNum {
+        width:88%;
+        height:12%;
+        display:flex;
+        flex-flow:row wrap;
+        justify-content: flex-end;
+    }
+    .modalNum > p {
+        text-align: left;
+        font-weight:600;
+        font-size:27px;
+    }
+    #printContent  .modalprint {
+        font-family:'궁서체' !important;
+        font-size:41px;
+        width:90%;
+        height:12%;
+        display:flex;
+        flex-flow:row wrap;
+        justify-content: flex-end;
+    }
+    .modalprint p{
+        text-align: left;
+
+    }
+    /* Print Contents End Line */
+}

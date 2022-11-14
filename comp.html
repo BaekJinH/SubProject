@@ -19,7 +19,9 @@
         <link rel="stylesheet" href="/static/css/dummy.css"><!-- 신규 콘텐츠 용, 꼭 마지막에 호출한다 -->
         <link rel="stylesheet" href="/static/css/main.css">
         <!-- 수료증 추가 -->
-        <link rel="stylesheet" href="/static/css/complet.css">
+        <link rel="stylesheet" href="/static/css/complet.css" >
+        <link rel="stylesheet" href="/static/css/printStyle.css" media="print">
+
         <script src="/static/js/jquery-1.12.4.min.js"></script>
         <script src="/static/js/jshashtable-2.1.js"></script>
         <script src="/static/js/jquery.numberformatter-1.2.3.js"></script>
@@ -839,10 +841,26 @@
         <div class="modalWrap">
             <div class="printContent" id="printContent">
                 <div class="bandContainer">
-                    <div class="leftUp"></div>
-                    <div class="rightUp"></div>
-                    <div class="leftDown"></div>
-                    <div class="rightDown"></div>
+                    <div class="leftUp">
+                        <div class="leftUpEle">
+
+                        </div>
+                    </div>
+                    <div class="rightUp">
+                        <div class="rightUpEle">
+
+                        </div>
+                    </div>
+                    <div class="leftDown">
+                        <div class="leftDownEle">
+
+                        </div>
+                    </div>
+                    <div class="rightDown">
+                        <div class="rightDownEle">
+
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="contentsWrap">
@@ -851,7 +869,7 @@
                     </div>
                     <div class="dataNum">
                         <p>
-                            아무런-숫자-코드-넘버
+                            제Data-Numb-22-Num호
                         </p>
                     </div>
                     <div class="modalHead">
@@ -910,8 +928,10 @@
                 </div>
             </div>
             <div class="modalBtnWrap">
-                <button id="openOrigin"><a href="original.html" target="_blank">원본 보기</a></button>
-                <button id="princBtn" onclick="return printBtn()">인쇄</button>
+                <!-- <button id="openOrigin">
+                        원본 보기
+                </button> -->
+                <button id="princBtn" onclick="printBtn()">인쇄</button>
                 <button id="modalClose">닫기</button>
             </div>
             <div class="modalUnderText">
